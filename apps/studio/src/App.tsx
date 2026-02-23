@@ -15,6 +15,7 @@ export default function App() {
     return saved ? JSON.parse(saved) : INITIAL_PROJECT;
   });
   const [activePatternId, setActivePatternId] = useState(project.patterns[0].id);
+  const [isExporting, setIsExporting] = useState(false);
 
   const { isPlaying, currentStep, togglePlay } = useAudioEngine(project);
 
@@ -130,18 +131,52 @@ export default function App() {
     }));
   };
 
-  const handleExport = async () => {
+  const downloadBlob = (blob: Blob, filename: string) => {
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const handleExportMaster = async () => {
+    setIsExporting(true);
     try {
-      const wavBlob = await renderToWav(project);
-      const url = URL.createObjectURL(wavBlob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `${project.name.toLowerCase().replace(/\s+/g, '-')}.wav`;
-      a.click();
-      URL.revokeObjectURL(url);
+      const wavBlob = await renderToWav(project, activePattern, 'master');
+      downloadBlob(wavBlob, `${project.name.toLowerCase().replace(/\s+/g, '-')}-master.wav`);
     } catch (error) {
       console.error('Export failed:', error);
     }
+    setIsExporting(false);
+  };
+
+  const handleExportStems = async () => {
+    setIsExporting(true);
+    try {
+      const projectName = project.name.toLowerCase().replace(/\s+/g, '-');
+      
+      // Render and download Drums
+      const drumsBlob = await renderToWav(project, activePattern, 'drums');
+      downloadBlob(drumsBlob, `${projectName}-stem-drums.wav`);
+      
+      // Small delay to prevent the browser from blocking multiple rapid downloads
+      await new Promise(r => setTimeout(r, 500)); 
+      
+      // Render and download Bass
+      const bassBlob = await renderToWav(project, activePattern, 'bass');
+      downloadBlob(bassBlob, `${projectName}-stem-bass.wav`);
+      
+      await new Promise(r => setTimeout(r, 500));
+      
+      // Render and download Synth
+      const synthBlob = await renderToWav(project, activePattern, 'synth');
+      downloadBlob(synthBlob, `${projectName}-stem-synth.wav`);
+      
+    } catch (error) {
+      console.error('Stem export failed:', error);
+    }
+    setIsExporting(false);
   };
 
   return (
@@ -158,13 +193,22 @@ export default function App() {
             className="bg-transparent font-bold text-sm text-[#f4f4f5] focus:outline-none hover:bg-[#27272a] px-2 py-1 rounded transition-colors uppercase tracking-wider"
           />
         </div>
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-3">
           <button
-            onClick={handleExport}
-            className="flex items-center gap-2 px-4 py-2 bg-[#1a1a1a] border border-[#3f3f46] hover:bg-[#27272a] hover:text-[#f4f4f5] rounded text-xs font-bold transition-colors uppercase tracking-widest"
+            onClick={handleExportStems}
+            disabled={isExporting}
+            className="flex items-center gap-2 px-4 py-2 bg-[#1a1a1a] border border-[#3f3f46] hover:bg-[#27272a] hover:text-[#f4f4f5] rounded text-xs font-bold transition-colors uppercase tracking-widest disabled:opacity-50"
           >
             <Download size={14} />
-            Export WAV
+            {isExporting ? 'Rendering...' : 'Export Stems'}
+          </button>
+          <button
+            onClick={handleExportMaster}
+            disabled={isExporting}
+            className="flex items-center gap-2 px-4 py-2 bg-[#f97316] text-black hover:bg-[#ea580c] rounded text-xs font-bold transition-colors uppercase tracking-widest disabled:opacity-50"
+          >
+            <Download size={14} />
+            {isExporting ? 'Rendering...' : 'Export Master'}
           </button>
         </div>
       </div>

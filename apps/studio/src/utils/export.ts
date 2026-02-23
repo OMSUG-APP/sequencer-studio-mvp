@@ -1,114 +1,176 @@
-/**
- * @license
- * SPDX-License-Identifier: Apache-2.0
- */
+import { Project, Pattern } from '../types';
+import { createDrumEngine, createBassEngine, createSynthEngine, noteToFreq } from './audio';
 
-import { Project } from '../types';
-import { createDrumEngine, createBassEngine, noteToFreq } from './audio';
-
-export const renderToWav = async (project: Project) => {
-  const sampleRate = 44100;
-  const duration = 16 * (60 / project.bpm / 4); // Render one pattern (16 steps)
-  const ctx = new OfflineAudioContext(2, sampleRate * duration, sampleRate);
-  
-  const masterGain = ctx.createGain();
-  masterGain.connect(ctx.destination);
-  masterGain.gain.value = project.mixer.master.volume;
-
-  const drumGain = ctx.createGain();
-  drumGain.connect(masterGain);
-  drumGain.gain.value = project.mixer.drums.volume;
-
-  const bassGain = ctx.createGain();
-  bassGain.connect(masterGain);
-  bassGain.gain.value = project.mixer.bass.volume;
-
-  const drumEngine = createDrumEngine(ctx, drumGain);
-  const bassEngine = createBassEngine(ctx, bassGain);
-
-  const pattern = project.patterns[0];
-  const secondsPerStep = 60 / project.bpm / 4;
-
-  for (let step = 0; step < 16; step++) {
-    const time = step * secondsPerStep;
-    let adjustedTime = time;
-    if (step % 2 === 1) {
-      adjustedTime += secondsPerStep * (project.swing / 100);
-    }
-
-    Object.entries(pattern.drums).forEach(([inst, steps]) => {
-      const s = steps[step];
-      if (s.active) {
-        if (inst === 'BD') drumEngine.playBD(adjustedTime, s.velocity);
-        if (inst === 'SD') drumEngine.playSD(adjustedTime, s.velocity);
-        if (inst === 'HC') drumEngine.playHC(adjustedTime, s.velocity);
-        if (inst === 'OH') drumEngine.playOH(adjustedTime, s.velocity);
-      }
-    });
-
-    const bassStep = pattern.bass[step];
-    if (bassStep.active) {
-      const freq = noteToFreq(bassStep.note);
-      bassEngine.playNote(adjustedTime, freq, secondsPerStep * bassStep.length, bassStep.velocity);
-    }
+// Helper to create a quick impulse response for the offline reverb
+const createImpulseResponse = (ctx: BaseAudioContext, duration: number, decay: number) => {
+  const length = ctx.sampleRate * duration;
+  const impulse = ctx.createBuffer(2, length, ctx.sampleRate);
+  const left = impulse.getChannelData(0);
+  const right = impulse.getChannelData(1);
+  for (let i = 0; i < length; i++) {
+    const n = i === 0 ? 1 : Math.random() * 2 - 1;
+    left[i] = n * Math.pow(1 - i / length, decay);
+    right[i] = n * Math.pow(1 - i / length, decay);
   }
-
-  const renderedBuffer = await ctx.startRendering();
-  return bufferToWav(renderedBuffer);
+  return impulse;
 };
 
-function bufferToWav(buffer: AudioBuffer) {
+export const renderToWav = async (
+  project: Project, 
+  pattern: Pattern, 
+  mode: 'master' | 'drums' | 'bass' | 'synth' = 'master'
+): Promise<Blob> => {
+  const bpm = project.bpm || 120;
+  const stepTime = 60 / bpm / 4; // 16th note duration
+  const numLoops = 4; // EXPORT 4 LOOPS
+  const stepsPerLoop = 16;
+  const totalSteps = stepsPerLoop * numLoops;
+  const tailLength = 3.0; // Add 3 seconds at the end so Reverb/Delay tails don't cut off
+  const duration = (totalSteps * stepTime) + tailLength;
+  const sampleRate = 44100;
+
+  const ctx = new OfflineAudioContext(2, sampleRate * duration, sampleRate);
+
+  // --- 1. RECREATE THE MASTER BUS ---
+  const masterGain = ctx.createGain();
+  masterGain.gain.value = project.mixer?.master?.volume ?? 1.0;
+  
+  const driveAmount = project.mixer?.master?.drive ?? 0;
+  const driveNode = ctx.createWaveShaper();
+  if (driveAmount > 0) {
+    const curve = new Float32Array(44100);
+    const k = driveAmount * 100;
+    for (let i = 0; i < 44100; i++) {
+      const x = (i * 2) / 44100 - 1;
+      curve[i] = ((3 + k) * x * 20 * (Math.PI / 180)) / (Math.PI + k * Math.abs(x));
+    }
+    driveNode.curve = curve;
+  }
+  driveNode.connect(masterGain);
+  masterGain.connect(ctx.destination);
+
+  // --- 2. RECREATE THE FX BUSES ---
+  const reverbNode = ctx.createConvolver();
+  reverbNode.buffer = createImpulseResponse(ctx, 2.0, 2.0);
+  reverbNode.connect(driveNode);
+
+  const delayNode = ctx.createDelay();
+  delayNode.delayTime.value = project.mixer?.drums?.delay?.time ?? 0.3;
+  const delayFeedback = ctx.createGain();
+  delayFeedback.gain.value = project.mixer?.drums?.delay?.feedback ?? 0.3;
+  delayNode.connect(delayFeedback);
+  delayFeedback.connect(delayNode);
+  delayNode.connect(driveNode);
+
+  // --- 3. RECREATE CHANNEL STRIPS ---
+  const setupChannel = (name: 'drums' | 'bass' | 'synth') => {
+    const chMixer = project.mixer?.[name] || { volume: 0.8, eq: { low: 0, mid: 0, high: 0 }, reverb: 0, delay: { mix: 0 } };
+    const gain = ctx.createGain();
+    
+    // STEM EXPORT LOGIC: Mute the channel if we are exporting a different stem
+    if (mode !== 'master' && mode !== name) {
+      gain.gain.value = 0;
+    } else {
+      gain.gain.value = chMixer.volume;
+    }
+
+    const lowEQ = ctx.createBiquadFilter(); lowEQ.type = 'lowshelf'; lowEQ.frequency.value = 100; lowEQ.gain.value = chMixer.eq?.low ?? 0;
+    const midEQ = ctx.createBiquadFilter(); midEQ.type = 'peaking'; midEQ.frequency.value = 1000; midEQ.gain.value = chMixer.eq?.mid ?? 0;
+    const highEQ = ctx.createBiquadFilter(); highEQ.type = 'highshelf'; highEQ.frequency.value = 10000; highEQ.gain.value = chMixer.eq?.high ?? 0;
+
+    lowEQ.connect(midEQ); midEQ.connect(highEQ); highEQ.connect(gain);
+    gain.connect(driveNode);
+
+    const revSend = ctx.createGain(); revSend.gain.value = chMixer.reverb ?? 0;
+    gain.connect(revSend); revSend.connect(reverbNode);
+
+    const delSend = ctx.createGain(); delSend.gain.value = chMixer.delay?.mix ?? 0;
+    gain.connect(delSend); delSend.connect(delayNode);
+
+    return lowEQ; 
+  };
+
+  const drumInput = setupChannel('drums');
+  const bassInput = setupChannel('bass');
+  const synthInput = setupChannel('synth');
+
+  // --- 4. SCHEDULE 4 LOOPS OF AUDIO ---
+  for (let loop = 0; loop < numLoops; loop++) {
+    for (let step = 0; step < stepsPerLoop; step++) {
+      const time = (loop * stepsPerLoop + step) * stepTime;
+
+      // Drums
+      Object.entries(pattern.drums).forEach(([inst, steps]) => {
+        if (steps[step]?.active) {
+          const p = project.drumParams?.[inst] || { tune: 0.5, decay: 0.5, mute: false, solo: false };
+          const anySolo = Object.values(project.drumParams || {}).some(dp => dp.solo);
+          if (p.mute || (anySolo && !p.solo)) return;
+
+          const layerGain = ctx.createGain();
+          layerGain.gain.value = 1.0;
+          layerGain.connect(drumInput);
+          
+          const engine = createDrumEngine(ctx, layerGain);
+          const vel = steps[step].velocity ?? 0.8;
+          
+          if (inst === 'BD') engine.playBD(time, vel, p);
+          if (inst === 'SD') engine.playSD(time, vel, p);
+          if (inst === 'HC') engine.playHC(time, vel, p);
+          if (inst === 'OH') engine.playOH(time, vel, p);
+          if (inst === 'LT') engine.playLT(time, vel, p);
+          if (inst === 'HT') engine.playHT(time, vel, p);
+        }
+      });
+
+      // Bass
+      if (pattern.bass[step]?.active) {
+        const engine = createBassEngine(ctx, bassInput);
+        const freq = noteToFreq(pattern.bass[step].note!);
+        const bp = project.bassParams || { waveform: 'sawtooth', cutoff: 0.5, resonance: 0.2, envMod: 0.5, decay: 0.5 };
+        engine.playNote(time, freq, stepTime, 0.8, bp);
+      }
+
+      // Synth
+      if (pattern.synth?.[step]?.active) {
+        const engine = createSynthEngine(ctx, synthInput);
+        const freq = noteToFreq(pattern.synth[step].note!);
+        const sp = project.synthParams || { attack: 0.5, release: 0.5, cutoff: 0.5, detune: 0.5 };
+        engine.playNote(time, freq, stepTime * 4, 0.6, sp);
+      }
+    }
+  }
+
+  // --- 5. RENDER AND CONVERT TO WAV ---
+  const renderedBuffer = await ctx.startRendering();
+  return audioBufferToWav(renderedBuffer);
+};
+
+// Standard AudioBuffer to WAV conversion
+function audioBufferToWav(buffer: AudioBuffer): Blob {
   const numOfChan = buffer.numberOfChannels;
   const length = buffer.length * numOfChan * 2 + 44;
-  const bufferArr = new ArrayBuffer(length);
-  const view = new DataView(bufferArr);
+  const out = new ArrayBuffer(length);
+  const view = new DataView(out);
   const channels = [];
-  let i;
-  let sample;
-  let offset = 0;
-  let pos = 0;
+  let sample = 0, offset = 0, pos = 0;
 
-  // write WAVE header
-  setUint32(0x46464952); // "RIFF"
-  setUint32(length - 8); // file length - 8
-  setUint32(0x45564157); // "WAVE"
+  const setUint16 = (data: number) => { view.setUint16(pos, data, true); pos += 2; };
+  const setUint32 = (data: number) => { view.setUint32(pos, data, true); pos += 4; };
 
-  setUint32(0x20746d66); // "fmt " chunk
-  setUint32(16); // length = 16
-  setUint16(1); // PCM (uncompressed)
-  setUint16(numOfChan);
-  setUint32(buffer.sampleRate);
-  setUint32(buffer.sampleRate * 2 * numOfChan); // avg. bytes/sec
-  setUint16(numOfChan * 2); // block-align
-  setUint16(16); // 16-bit (hardcoded)
+  setUint32(0x46464952); setUint32(length - 8); setUint32(0x45564157); setUint32(0x20746d66);
+  setUint32(16); setUint16(1); setUint16(numOfChan); setUint32(buffer.sampleRate);
+  setUint32(buffer.sampleRate * 2 * numOfChan); setUint16(numOfChan * 2); setUint16(16);
+  setUint32(0x61746164); setUint32(length - pos - 4);
 
-  setUint32(0x61746164); // "data" - chunk
-  setUint32(length - pos - 4); // chunk length
-
-  // write interleaved data
-  for (i = 0; i < buffer.numberOfChannels; i++)
-    channels.push(buffer.getChannelData(i));
+  for (let i = 0; i < buffer.numberOfChannels; i++) channels.push(buffer.getChannelData(i));
 
   while (pos < length) {
-    for (i = 0; i < numOfChan; i++) {
-      // interleave channels
-      sample = Math.max(-1, Math.min(1, channels[i][offset])); // clamp
-      sample = (0.5 + sample < 0 ? sample * 32768 : sample * 32767) | 0; // scale to 16-bit signed int
-      view.setInt16(pos, sample, true); // write 16-bit sample
-      pos += 2;
+    for (let i = 0; i < numOfChan; i++) {
+      sample = Math.max(-1, Math.min(1, channels[i][offset]));
+      sample = (0.5 + sample < 0 ? sample * 32768 : sample * 32767) | 0;
+      view.setInt16(pos, sample, true); pos += 2;
     }
-    offset++; // next source sample
+    offset++;
   }
-
-  return new Blob([bufferArr], { type: 'audio/wav' });
-
-  function setUint16(data: number) {
-    view.setUint16(pos, data, true);
-    pos += 2;
-  }
-
-  function setUint32(data: number) {
-    view.setUint32(pos, data, true);
-    pos += 4;
-  }
+  return new Blob([out], { type: 'audio/wav' });
 }
