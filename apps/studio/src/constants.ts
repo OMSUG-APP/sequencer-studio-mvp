@@ -59,7 +59,7 @@ export const INITIAL_PROJECT: Project = {
     drums: { volume: 0.8, eq: { low: 0, mid: 0, high: 0 }, reverb: 0, delay: { time: 0.3, feedback: 0.3, mix: 0 } },
     bass: { volume: 0.8, eq: { low: 0, mid: 0, high: 0 }, reverb: 0, delay: { time: 0.3, feedback: 0.3, mix: 0 } },
     synth: { volume: 0.7, eq: { low: 0, mid: 0, high: 0 }, reverb: 0, delay: { time: 0.3, feedback: 0.3, mix: 0 } },
-    master: { volume: 1.0, drive: 0, reverb: 0.2, delay: { time: 0.3, feedback: 0.3, mix: 0 } }
+    master: { volume: 1.0, drive: 0, reverb: 0.2, delay: { time: 0.3, feedback: 0.3, mix: 0 }, compressor: { threshold: -12, knee: 6, ratio: 4, attack: 0.003, release: 0.25 } }
   },
   bassParams: { waveform: 'sawtooth', octave: 2, cutoff: 0.5, resonance: 0.2, envMod: 0.5, decay: 0.5 },
   synthParams: { octave: 4, attack: 0.5, release: 0.5, cutoff: 0.5, detune: 0.5 }

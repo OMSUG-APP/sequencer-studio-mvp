@@ -34,7 +34,17 @@ export const renderToWav = async (
   // --- 1. RECREATE THE MASTER BUS ---
   const masterGain = ctx.createGain();
   masterGain.gain.value = project.mixer?.master?.volume ?? 1.0;
-  
+
+  const compressor = ctx.createDynamicsCompressor();
+  const masterComp = (project.mixer?.master as any)?.compressor;
+  if (masterComp) {
+    compressor.threshold.value = masterComp.threshold ?? -12;
+    compressor.knee.value = masterComp.knee ?? 6;
+    compressor.ratio.value = masterComp.ratio ?? 4;
+    compressor.attack.value = masterComp.attack ?? 0.003;
+    compressor.release.value = masterComp.release ?? 0.25;
+  }
+
   const driveAmount = project.mixer?.master?.drive ?? 0;
   const driveNode = ctx.createWaveShaper();
   if (driveAmount > 0) {
@@ -47,7 +57,8 @@ export const renderToWav = async (
     driveNode.curve = curve;
   }
   driveNode.connect(masterGain);
-  masterGain.connect(ctx.destination);
+  masterGain.connect(compressor);
+  compressor.connect(ctx.destination);
 
   // --- 2. RECREATE THE FX BUSES ---
   const reverbNode = ctx.createConvolver();

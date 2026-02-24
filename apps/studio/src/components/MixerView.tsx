@@ -76,7 +76,8 @@ export function MixerView({ mixer, onMixerChange }: any) {
       if (newMixer[ch].reverb === undefined) newMixer[ch].reverb = 0;
       if (!newMixer[ch].delay) newMixer[ch].delay = { time: 0.3, feedback: 0.3, mix: 0 };
     });
-    if (!newMixer.master) newMixer.master = { volume: 1.0, drive: 0 };
+    if (!newMixer.master) newMixer.master = { volume: 1.0, drive: 0, compressor: { threshold: -12, knee: 6, ratio: 4, attack: 0.003, release: 0.25 } };
+    if (!newMixer.master.compressor) newMixer.master.compressor = { threshold: -12, knee: 6, ratio: 4, attack: 0.003, release: 0.25 };
 
     if (subParam) newMixer[section][param][subParam] = value;
     else newMixer[section][param] = value;
@@ -97,7 +98,8 @@ export function MixerView({ mixer, onMixerChange }: any) {
   const drums = getChannel('drums', 0.8);
   const bass = getChannel('bass', 0.8);
   const synth = getChannel('synth', 0.7);
-  const master = m.master || { volume: 1.0, drive: 0 };
+  const master = m.master || { volume: 1.0, drive: 0, compressor: { threshold: -12, knee: 6, ratio: 4, attack: 0.003, release: 0.25 } };
+  const comp = master.compressor || { threshold: -12, knee: 6, ratio: 4, attack: 0.003, release: 0.25 };
 
   return (
     <div className="flex flex-col h-full">
@@ -126,6 +128,28 @@ export function MixerView({ mixer, onMixerChange }: any) {
               <div className="flex items-center gap-2">
                 <span className="text-[9px] text-[#ef4444] font-bold w-12">DRIVE</span>
                 <div className="flex-1 max-w-xs"><input type="range" min="0" max="1" step="0.01" value={master.drive} onChange={e => updateMixer('master', 'drive', parseFloat(e.target.value))} className="w-full h-1 bg-[#27272a] rounded-lg cursor-pointer accent-[#ef4444]" /></div>
+              </div>
+              <div className="border-t border-[#3f3f46] my-1"></div>
+              <span className="text-[9px] text-[#a1a1aa] font-bold">COMP</span>
+              <div className="flex items-center gap-2">
+                <span className="text-[9px] text-[#a1a1aa] w-12">THRESH</span>
+                <div className="flex-1 max-w-xs"><input type="range" min="-60" max="0" step="0.5" value={comp.threshold} onChange={e => updateMixer('master', 'compressor', parseFloat(e.target.value), 'threshold')} className="w-full h-1 bg-[#27272a] rounded-lg cursor-pointer accent-white" /></div>
+                <span className="text-[9px] text-[#52525b] w-8 text-right">{comp.threshold}dB</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-[9px] text-[#a1a1aa] w-12">RATIO</span>
+                <div className="flex-1 max-w-xs"><input type="range" min="1" max="20" step="0.5" value={comp.ratio} onChange={e => updateMixer('master', 'compressor', parseFloat(e.target.value), 'ratio')} className="w-full h-1 bg-[#27272a] rounded-lg cursor-pointer accent-white" /></div>
+                <span className="text-[9px] text-[#52525b] w-8 text-right">{comp.ratio}:1</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-[9px] text-[#a1a1aa] w-12">ATTACK</span>
+                <div className="flex-1 max-w-xs"><input type="range" min="0" max="0.5" step="0.001" value={comp.attack} onChange={e => updateMixer('master', 'compressor', parseFloat(e.target.value), 'attack')} className="w-full h-1 bg-[#27272a] rounded-lg cursor-pointer accent-white" /></div>
+                <span className="text-[9px] text-[#52525b] w-8 text-right">{Math.round(comp.attack * 1000)}ms</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-[9px] text-[#a1a1aa] w-12">RELEASE</span>
+                <div className="flex-1 max-w-xs"><input type="range" min="0.01" max="1" step="0.01" value={comp.release} onChange={e => updateMixer('master', 'compressor', parseFloat(e.target.value), 'release')} className="w-full h-1 bg-[#27272a] rounded-lg cursor-pointer accent-white" /></div>
+                <span className="text-[9px] text-[#52525b] w-8 text-right">{Math.round(comp.release * 1000)}ms</span>
               </div>
             </div>
           </div>

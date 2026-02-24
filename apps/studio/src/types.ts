@@ -56,6 +56,13 @@ export interface Project {
       drive: number;
       reverb: number;
       delay: MasterDelay;
+      compressor?: {
+        threshold: number;
+        knee: number;
+        ratio: number;
+        attack: number;
+        release: number;
+      };
     };
   };
 }

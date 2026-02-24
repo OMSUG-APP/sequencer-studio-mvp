@@ -55,6 +55,7 @@ export const useAudioEngine = (project: Project) => {
   const sharedDelayFeedbackRef = useRef<GainNode | null>(null);
   const sharedDelayReturnRef = useRef<GainNode | null>(null);
 
+  const masterCompressorRef = useRef<DynamicsCompressorNode | null>(null);
   const masterDriveRef = useRef<WaveShaperNode | null>(null);
 
   // Per-drum-layer gains for mute/solo
@@ -195,6 +196,18 @@ export const useAudioEngine = (project: Project) => {
       sharedDelayFeedbackRef.current.gain.value = drumDelay.feedback ?? 0.3;
     }
 
+    // Master compressor
+    if (masterCompressorRef.current) {
+      const comp = (master as any).compressor;
+      if (comp) {
+        masterCompressorRef.current.threshold.value = comp.threshold ?? -12;
+        masterCompressorRef.current.knee.value = comp.knee ?? 6;
+        masterCompressorRef.current.ratio.value = comp.ratio ?? 4;
+        masterCompressorRef.current.attack.value = comp.attack ?? 0.003;
+        masterCompressorRef.current.release.value = comp.release ?? 0.25;
+      }
+    }
+
     // Master drive
     if (masterDriveRef.current) {
       masterDriveRef.current.curve = makeDistortionCurve((master.drive ?? 0) * 400);
@@ -208,10 +221,12 @@ export const useAudioEngine = (project: Project) => {
 
       // ── Master bus ───────────────────────────────────────────
       masterGainRef.current = ctx.createGain();
+      masterCompressorRef.current = ctx.createDynamicsCompressor();
       masterDriveRef.current = ctx.createWaveShaper();
       masterDriveRef.current.oversample = '4x';
 
-      masterGainRef.current.connect(masterDriveRef.current);
+      masterGainRef.current.connect(masterCompressorRef.current);
+      masterCompressorRef.current.connect(masterDriveRef.current);
       masterDriveRef.current.connect(ctx.destination);
 
       // ── Shared Reverb bus ───────────────────────────────────
@@ -348,6 +363,18 @@ export const useAudioEngine = (project: Project) => {
     }
     if (sharedDelayFeedbackRef.current) {
       sharedDelayFeedbackRef.current.gain.value = drumDelay.feedback ?? 0.3;
+    }
+
+    // Master compressor
+    if (masterCompressorRef.current) {
+      const comp = (master as any).compressor;
+      if (comp) {
+        masterCompressorRef.current.threshold.value = comp.threshold ?? -12;
+        masterCompressorRef.current.knee.value = comp.knee ?? 6;
+        masterCompressorRef.current.ratio.value = comp.ratio ?? 4;
+        masterCompressorRef.current.attack.value = comp.attack ?? 0.003;
+        masterCompressorRef.current.release.value = comp.release ?? 0.25;
+      }
     }
 
     // Master drive
