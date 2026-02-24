@@ -111,6 +111,13 @@ export default function App() {
     }));
   };
 
+  const handleDrumKitChange = (kit: '808' | '909') => {
+    setProject(prev => ({
+      ...prev,
+      drumKit: kit
+    }));
+  };
+
   const handleUpdateBassParam = (param: string, value: any) => {
     setProject(prev => ({
       ...prev,
@@ -233,6 +240,8 @@ export default function App() {
               onToggleDrumStep={handleToggleDrumStep}
               onToggleBassStep={handleToggleBassStep}
               onToggleSynthStep={handleToggleSynthStep}
+              drumKit={project.drumKit}
+              onDrumKitChange={handleDrumKitChange}
               drumParams={project.drumParams}
               onUpdateDrumParam={handleUpdateDrumParam}
               bassParams={project.bassParams}

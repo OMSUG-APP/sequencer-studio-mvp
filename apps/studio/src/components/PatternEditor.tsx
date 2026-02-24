@@ -7,6 +7,8 @@ interface PatternEditorProps {
   onToggleDrumStep: (inst: DrumInstrument, step: number) => void;
   onToggleBassStep: (step: number, note: string) => void;
   onToggleSynthStep: (step: number, note: string) => void;
+  drumKit?: '808' | '909';
+  onDrumKitChange?: (kit: '808' | '909') => void;
   drumParams?: Record<string, { tune: number; decay: number; mute?: boolean; solo?: boolean }>;
   onUpdateDrumParam: (inst: string, param: string, value: any) => void;
   bassParams?: { waveform: string; cutoff: number; resonance: number; envMod: number; decay: number };
@@ -20,7 +22,7 @@ const SYNTH_NOTES = ['B', 'A#', 'A', 'G#', 'G', 'F#', 'F', 'E', 'D#', 'D', 'C#',
 
 export function PatternEditor({
   pattern, currentStep, onToggleDrumStep, onToggleBassStep, onToggleSynthStep,
-  drumParams = {}, onUpdateDrumParam, bassParams, onUpdateBassParam, synthParams, onUpdateSynthParam
+  drumKit, onDrumKitChange, drumParams = {}, onUpdateDrumParam, bassParams, onUpdateBassParam, synthParams, onUpdateSynthParam
 }: PatternEditorProps) {
   
   const formatDrumName = (name: string) => {
@@ -35,7 +37,32 @@ export function PatternEditor({
 
   return (
     <div className="flex flex-col h-full">
-      
+
+      {/* DRUM KIT SELECTOR */}
+      <div className="mb-4 flex items-center gap-3 px-3 py-2 bg-[#0a0a0a] border-b border-[#27272a]">
+        <span className="text-[9px] font-bold text-[#a1a1aa] uppercase">Drum Kit</span>
+        <button
+          onClick={() => onDrumKitChange?.('808')}
+          className={`px-3 py-1 text-[9px] font-bold rounded transition-colors ${
+            drumKit === '808'
+              ? 'bg-[#f97316] text-black'
+              : 'bg-[#27272a] text-[#a1a1aa] hover:bg-[#3f3f46]'
+          }`}
+        >
+          808
+        </button>
+        <button
+          onClick={() => onDrumKitChange?.('909')}
+          className={`px-3 py-1 text-[9px] font-bold rounded transition-colors ${
+            drumKit === '909'
+              ? 'bg-[#f97316] text-black'
+              : 'bg-[#27272a] text-[#a1a1aa] hover:bg-[#3f3f46]'
+          }`}
+        >
+          909
+        </button>
+      </div>
+
       {/* DRUMS SECTION */}
       <div className="flex flex-col gap-2">
         {Object.entries(pattern.drums).map(([inst, steps]) => {
@@ -110,6 +137,11 @@ export function PatternEditor({
                 <div key={key} className="flex flex-col items-center gap-1 w-12"><span className="text-[9px] text-[#a1a1aa] uppercase">{label}</span><input type="range" min="0" max="1" step="0.01" value={(bp as any)[key]} onChange={e => onUpdateBassParam(key, parseFloat(e.target.value))} className="w-full h-1 bg-[#1a1a1a] rounded-lg cursor-pointer accent-[#f97316]" /></div>
               ))}
             </div>
+            <div className="flex items-center gap-2 ml-4 pl-4 border-l border-[#27272a]">
+              <button onClick={() => onUpdateBassParam('octave', Math.max(0, (bp.octave || 2) - 1))} className="px-2 py-1 bg-[#1a1a1a] border border-[#3f3f46] hover:bg-[#27272a] rounded text-[10px] font-bold text-[#a1a1aa] transition-colors">−</button>
+              <span className="text-[9px] font-bold text-[#a1a1aa] min-w-4 text-center">{bp.octave || 2}</span>
+              <button onClick={() => onUpdateBassParam('octave', Math.min(8, (bp.octave || 2) + 1))} className="px-2 py-1 bg-[#1a1a1a] border border-[#3f3f46] hover:bg-[#27272a] rounded text-[10px] font-bold text-[#a1a1aa] transition-colors">+</button>
+            </div>
           </div>
         </div>
         <div className="flex flex-col gap-1">
@@ -136,6 +168,11 @@ export function PatternEditor({
               {[{ label: 'Attack', key: 'attack' }, { label: 'Release', key: 'release' }, { label: 'Cutoff', key: 'cutoff' }, { label: 'Detune', key: 'detune' }].map(({ label, key }) => (
                 <div key={key} className="flex flex-col items-center gap-1 w-12"><span className="text-[9px] text-[#a1a1aa] uppercase">{label}</span><input type="range" min="0" max="1" step="0.01" value={(sp as any)[key]} onChange={e => onUpdateSynthParam(key, parseFloat(e.target.value))} className="w-full h-1 bg-[#1a1a1a] rounded-lg cursor-pointer accent-[#8b5cf6]" /></div>
               ))}
+            </div>
+            <div className="flex items-center gap-2 ml-4 pl-4 border-l border-[#27272a]">
+              <button onClick={() => onUpdateSynthParam('octave', Math.max(0, (sp.octave || 4) - 1))} className="px-2 py-1 bg-[#1a1a1a] border border-[#3f3f46] hover:bg-[#27272a] rounded text-[10px] font-bold text-[#a1a1aa] transition-colors">−</button>
+              <span className="text-[9px] font-bold text-[#a1a1aa] min-w-4 text-center">{sp.octave || 4}</span>
+              <button onClick={() => onUpdateSynthParam('octave', Math.min(8, (sp.octave || 4) + 1))} className="px-2 py-1 bg-[#1a1a1a] border border-[#3f3f46] hover:bg-[#27272a] rounded text-[10px] font-bold text-[#a1a1aa] transition-colors">+</button>
             </div>
           </div>
         </div>

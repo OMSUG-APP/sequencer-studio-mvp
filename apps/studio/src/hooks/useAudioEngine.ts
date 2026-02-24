@@ -105,7 +105,7 @@ export const useAudioEngine = (project: Project) => {
       // Set gain to 0 if muted, 1 if playing
       layerGain.gain.setValueAtTime(effectiveMuted ? 0 : 1, adjustedTime);
 
-      const layerEngine = createDrumEngine(audioCtxRef.current!, layerGain);
+      const layerEngine = createDrumEngine(audioCtxRef.current!, layerGain, currentProject.drumKit || '808');
       
       if (inst === 'BD') layerEngine.playBD(adjustedTime, s.velocity, p);
       if (inst === 'SD') layerEngine.playSD(adjustedTime, s.velocity, p);
@@ -118,16 +118,18 @@ export const useAudioEngine = (project: Project) => {
     // BASS SCHEDULING
     const bassStep = pattern.bass?.[step];
     if (bassStep?.active && bassStep?.note) {
-      const freq = noteToFreq(bassStep.note);
-      const bp = currentProject.bassParams || { waveform: 'sawtooth', cutoff: 0.5, resonance: 0.2, envMod: 0.5, decay: 0.5 };
+      const bp = currentProject.bassParams || { waveform: 'sawtooth', octave: 2, cutoff: 0.5, resonance: 0.2, envMod: 0.5, decay: 0.5 };
+      const bassOctaveShift = (bp.octave || 2) - 2;
+      const freq = noteToFreq(bassStep.note, bassOctaveShift);
       bassEngine.playNote(adjustedTime, freq, secondsPerStep * (bassStep.length || 1), bassStep.velocity || 0.8, bp);
     }
 
     // SYNTH SCHEDULING
     const synthStep = pattern.synth?.[step];
     if (synthStep?.active && synthStep?.note) {
-      const freq = noteToFreq(synthStep.note);
-      const sp = currentProject.synthParams || { attack: 0.5, release: 0.5, cutoff: 0.5, detune: 0.5 };
+      const sp = currentProject.synthParams || { octave: 4, attack: 0.5, release: 0.5, cutoff: 0.5, detune: 0.5 };
+      const synthOctaveShift = (sp.octave || 4) - 4;
+      const freq = noteToFreq(synthStep.note, synthOctaveShift);
       synthEngine.playNote(adjustedTime, freq, secondsPerStep * (synthStep.length || 4), synthStep.velocity || 0.6, sp);
     }
   }, []);
@@ -144,6 +146,59 @@ export const useAudioEngine = (project: Project) => {
     }
     timerIDRef.current = window.setTimeout(scheduler, 25);
   }, [scheduleNote]);
+
+  const applyMixerToAudio = useCallback(() => {
+    const m = projectRef.current?.mixer || {};
+    const drums = m.drums || {}; const bass = m.bass || {}; const synth = m.synth || {}; const master = m.master || {};
+
+    if (drumGainRef.current) drumGainRef.current.gain.value = drums.volume ?? 0.8;
+    if (bassGainRef.current) bassGainRef.current.gain.value = bass.volume ?? 0.8;
+    if (synthGainRef.current) synthGainRef.current.gain.value = synth.volume ?? 0.7;
+    if (masterGainRef.current) masterGainRef.current.gain.value = master.volume ?? 1.0;
+
+    if (drumLowRef.current) drumLowRef.current.gain.value = drums.eq?.low ?? 0;
+    if (drumMidRef.current) drumMidRef.current.gain.value = drums.eq?.mid ?? 0;
+    if (drumHighRef.current) drumHighRef.current.gain.value = drums.eq?.high ?? 0;
+
+    if (bassLowRef.current) bassLowRef.current.gain.value = bass.eq?.low ?? 0;
+    if (bassMidRef.current) bassMidRef.current.gain.value = bass.eq?.mid ?? 0;
+    if (bassHighRef.current) bassHighRef.current.gain.value = bass.eq?.high ?? 0;
+
+    if (synthLowRef.current) synthLowRef.current.gain.value = synth.eq?.low ?? 0;
+    if (synthMidRef.current) synthMidRef.current.gain.value = synth.eq?.mid ?? 0;
+    if (synthHighRef.current) synthHighRef.current.gain.value = synth.eq?.high ?? 0;
+
+    // Per-channel reverb sends
+    if (drumReverbSendRef.current) drumReverbSendRef.current.gain.value = drums.reverb ?? 0;
+    if (bassReverbSendRef.current) bassReverbSendRef.current.gain.value = bass.reverb ?? 0;
+    if (synthReverbSendRef.current) synthReverbSendRef.current.gain.value = synth.reverb ?? 0;
+
+    // Per-channel delay sends (mix = send amount)
+    const drumDelay = drums.delay || {};
+    const bassDelay = bass.delay || {};
+    const synthDelay = synth.delay || {};
+
+    if (drumDelaySendRef.current) drumDelaySendRef.current.gain.value = drumDelay.mix ?? 0;
+    if (bassDelaySendRef.current) bassDelaySendRef.current.gain.value = bassDelay.mix ?? 0;
+    if (synthDelaySendRef.current) synthDelaySendRef.current.gain.value = synthDelay.mix ?? 0;
+
+    // Shared delay time / feedback (driven by drums delay settings for now)
+    if (sharedDelayRef.current) {
+      sharedDelayRef.current.delayTime.setTargetAtTime(
+        drumDelay.time ?? 0.3,
+        audioCtxRef.current?.currentTime || 0,
+        0.1
+      );
+    }
+    if (sharedDelayFeedbackRef.current) {
+      sharedDelayFeedbackRef.current.gain.value = drumDelay.feedback ?? 0.3;
+    }
+
+    // Master drive
+    if (masterDriveRef.current) {
+      masterDriveRef.current.curve = makeDistortionCurve((master.drive ?? 0) * 400);
+    }
+  }, []);
 
   const togglePlay = useCallback(() => {
     if (!audioCtxRef.current) {
@@ -228,6 +283,9 @@ export const useAudioEngine = (project: Project) => {
       synthHighRef.current.connect(synthDelaySendRef.current);
       synthReverbSendRef.current.connect(sharedReverbRef.current);
       synthDelaySendRef.current.connect(sharedDelayRef.current);
+
+      // Apply initial mixer values to the newly created audio nodes
+      applyMixerToAudio();
     }
 
     if (isPlaying) {
@@ -240,7 +298,7 @@ export const useAudioEngine = (project: Project) => {
       stepRef.current = 0;
       scheduler();
     }
-  }, [isPlaying, scheduler]);
+  }, [isPlaying, scheduler, applyMixerToAudio]);
 
   useEffect(() => {
     const m = project?.mixer || {};

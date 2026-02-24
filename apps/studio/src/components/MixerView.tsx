@@ -1,4 +1,5 @@
 import React from 'react';
+import { RotaryKnob } from './RotaryKnob';
 
 // 1. Moved ChannelRack OUTSIDE so React doesn't destroy it on every drag!
 const ChannelRack = ({ title, color, section, data, updateMixer }: any) => (
@@ -7,8 +8,8 @@ const ChannelRack = ({ title, color, section, data, updateMixer }: any) => (
     <div className="flex items-stretch gap-4">
       
       {/* Volume Fader */}
-      <div className="flex flex-col items-center w-8 border-r border-[#27272a] pr-4">
-        <input type="range" min="0" max="1.5" step="0.01" value={data.volume} onChange={e => updateMixer(section, 'volume', parseFloat(e.target.value))} className="w-1 h-48 bg-[#1a1a1a] rounded-lg cursor-pointer" style={{ writingMode: 'vertical-lr', direction: 'rtl', accentColor: color }} />
+      <div className="flex flex-col items-center w-8 border-r border-[#27272a] pr-4 flex-shrink-0 h-48" style={{ contain: 'layout' }}>
+        <input type="range" min="0" max="1.5" step="0.01" value={data.volume} onChange={e => updateMixer(section, 'volume', parseFloat(e.target.value))} className="w-1 h-full bg-[#1a1a1a] rounded-lg cursor-pointer flex-shrink-0" style={{ writingMode: 'vertical-lr', direction: 'rtl', accentColor: color }} />
         <span className="text-[9px] text-[#a1a1aa] mt-2 uppercase">Vol</span>
       </div>
 
@@ -17,9 +18,36 @@ const ChannelRack = ({ title, color, section, data, updateMixer }: any) => (
         
         {/* EQ Section */}
         <div className="flex flex-col gap-2">
-          <div className="flex items-center gap-2"><span className="text-[9px] text-[#a1a1aa] w-12 font-bold">EQ HI</span><input type="range" min="-12" max="12" step="0.1" value={data.eq.high} onChange={e => updateMixer(section, 'eq', parseFloat(e.target.value), 'high')} className="flex-1 h-1 bg-[#1a1a1a] rounded-lg cursor-pointer" style={{ accentColor: color }} /></div>
-          <div className="flex items-center gap-2"><span className="text-[9px] text-[#a1a1aa] w-12 font-bold">EQ MID</span><input type="range" min="-12" max="12" step="0.1" value={data.eq.mid} onChange={e => updateMixer(section, 'eq', parseFloat(e.target.value), 'mid')} className="flex-1 h-1 bg-[#1a1a1a] rounded-lg cursor-pointer" style={{ accentColor: color }} /></div>
-          <div className="flex items-center gap-2"><span className="text-[9px] text-[#a1a1aa] w-12 font-bold">EQ LOW</span><input type="range" min="-12" max="12" step="0.1" value={data.eq.low} onChange={e => updateMixer(section, 'eq', parseFloat(e.target.value), 'low')} className="flex-1 h-1 bg-[#1a1a1a] rounded-lg cursor-pointer" style={{ accentColor: color }} /></div>
+          <span className="text-[9px] text-[#a1a1aa] font-bold">EQ</span>
+          <div className="flex gap-3 justify-center items-end">
+            <RotaryKnob
+              label="HI"
+              min={-12}
+              max={12}
+              step={0.1}
+              value={data.eq.high}
+              onChange={(val) => updateMixer(section, 'eq', val, 'high')}
+              color={color}
+            />
+            <RotaryKnob
+              label="MID"
+              min={-12}
+              max={12}
+              step={0.1}
+              value={data.eq.mid}
+              onChange={(val) => updateMixer(section, 'eq', val, 'mid')}
+              color={color}
+            />
+            <RotaryKnob
+              label="LOW"
+              min={-12}
+              max={12}
+              step={0.1}
+              value={data.eq.low}
+              onChange={(val) => updateMixer(section, 'eq', val, 'low')}
+              color={color}
+            />
+          </div>
         </div>
 
         {/* Divider */}
@@ -27,10 +55,10 @@ const ChannelRack = ({ title, color, section, data, updateMixer }: any) => (
 
         {/* FX Section */}
         <div className="flex flex-col gap-2">
-          <div className="flex items-center gap-2"><span className="text-[9px] text-[#a1a1aa] w-12 font-bold">REVERB</span><input type="range" min="0" max="1" step="0.01" value={data.reverb} onChange={e => updateMixer(section, 'reverb', parseFloat(e.target.value))} className="flex-1 h-1 bg-[#1a1a1a] rounded-lg cursor-pointer" style={{ accentColor: color }} /></div>
-          <div className="flex items-center gap-2"><span className="text-[9px] text-[#a1a1aa] w-12 font-bold">D.TIME</span><input type="range" min="0.1" max="1.0" step="0.01" value={data.delay.time} onChange={e => updateMixer(section, 'delay', parseFloat(e.target.value), 'time')} className="flex-1 h-1 bg-[#1a1a1a] rounded-lg cursor-pointer" style={{ accentColor: color }} /></div>
-          <div className="flex items-center gap-2"><span className="text-[9px] text-[#a1a1aa] w-12 font-bold">D.FDBK</span><input type="range" min="0" max="0.9" step="0.01" value={data.delay.feedback} onChange={e => updateMixer(section, 'delay', parseFloat(e.target.value), 'feedback')} className="flex-1 h-1 bg-[#1a1a1a] rounded-lg cursor-pointer" style={{ accentColor: color }} /></div>
-          <div className="flex items-center gap-2"><span className="text-[9px] text-[#a1a1aa] w-12 font-bold">D.MIX</span><input type="range" min="0" max="1" step="0.01" value={data.delay.mix} onChange={e => updateMixer(section, 'delay', parseFloat(e.target.value), 'mix')} className="flex-1 h-1 bg-[#1a1a1a] rounded-lg cursor-pointer" style={{ accentColor: color }} /></div>
+          <div className="flex items-center gap-2"><span className="text-[9px] text-[#a1a1aa] w-12 font-bold">REVERB</span><div className="flex-1 max-w-xs"><input type="range" min="0" max="1" step="0.01" value={data.reverb} onChange={e => updateMixer(section, 'reverb', parseFloat(e.target.value))} className="w-full h-1 bg-[#1a1a1a] rounded-lg cursor-pointer" style={{ accentColor: color }} /></div></div>
+          <div className="flex items-center gap-2"><span className="text-[9px] text-[#a1a1aa] w-12 font-bold">D.TIME</span><div className="flex-1 max-w-xs"><input type="range" min="0.1" max="1.0" step="0.01" value={data.delay.time} onChange={e => updateMixer(section, 'delay', parseFloat(e.target.value), 'time')} className="w-full h-1 bg-[#1a1a1a] rounded-lg cursor-pointer" style={{ accentColor: color }} /></div></div>
+          <div className="flex items-center gap-2"><span className="text-[9px] text-[#a1a1aa] w-12 font-bold">D.FDBK</span><div className="flex-1 max-w-xs"><input type="range" min="0" max="0.9" step="0.01" value={data.delay.feedback} onChange={e => updateMixer(section, 'delay', parseFloat(e.target.value), 'feedback')} className="w-full h-1 bg-[#1a1a1a] rounded-lg cursor-pointer" style={{ accentColor: color }} /></div></div>
+          <div className="flex items-center gap-2"><span className="text-[9px] text-[#a1a1aa] w-12 font-bold">D.MIX</span><div className="flex-1 max-w-xs"><input type="range" min="0" max="1" step="0.01" value={data.delay.mix} onChange={e => updateMixer(section, 'delay', parseFloat(e.target.value), 'mix')} className="w-full h-1 bg-[#1a1a1a] rounded-lg cursor-pointer" style={{ accentColor: color }} /></div></div>
         </div>
 
       </div>
@@ -88,14 +116,16 @@ export function MixerView({ mixer, onMixerChange }: any) {
         <div className="bg-[#1a1a1a] p-3 rounded border border-[#3f3f46] shadow-[0_0_15px_rgba(0,0,0,0.5)] flex flex-col mt-2">
           <div className="text-[10px] font-bold text-white mb-3 uppercase tracking-wider">Master Bus</div>
           <div className="flex items-center gap-4">
-            <div className="flex flex-col items-center w-8 border-r border-[#3f3f46] pr-4">
-              <input type="range" min="0" max="1.5" step="0.01" value={master.volume} onChange={e => updateMixer('master', 'volume', parseFloat(e.target.value))} className="w-1 h-16 bg-[#27272a] rounded-lg cursor-pointer accent-white" style={{ writingMode: 'vertical-lr', direction: 'rtl' }} />
+            <div className="flex flex-col items-center w-8 border-r border-[#3f3f46] pr-4 flex-shrink-0" style={{ contain: 'layout' }}>
+              <div className="h-16">
+                <input type="range" min="0" max="1.5" step="0.01" value={master.volume} onChange={e => updateMixer('master', 'volume', parseFloat(e.target.value))} className="w-1 h-full bg-[#27272a] rounded-lg cursor-pointer flex-shrink-0 accent-white" style={{ writingMode: 'vertical-lr', direction: 'rtl' }} />
+              </div>
               <span className="text-[9px] text-white mt-2 uppercase font-bold">Vol</span>
             </div>
             <div className="flex-1 flex flex-col gap-3 justify-center">
               <div className="flex items-center gap-2">
                 <span className="text-[9px] text-[#ef4444] font-bold w-12">DRIVE</span>
-                <input type="range" min="0" max="1" step="0.01" value={master.drive} onChange={e => updateMixer('master', 'drive', parseFloat(e.target.value))} className="flex-1 h-1 bg-[#27272a] rounded-lg cursor-pointer accent-[#ef4444]" />
+                <div className="flex-1 max-w-xs"><input type="range" min="0" max="1" step="0.01" value={master.drive} onChange={e => updateMixer('master', 'drive', parseFloat(e.target.value))} className="w-full h-1 bg-[#27272a] rounded-lg cursor-pointer accent-[#ef4444]" /></div>
               </div>
             </div>
           </div>

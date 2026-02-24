@@ -1,5 +1,24 @@
 import { Project, Pattern } from './types';
 
+export const DRUM_KIT_PROFILES = {
+  '808': {
+    BD: { freqMult: 1.0, decayMult: 1.2 },
+    SD: { freqMult: 1.0, decayMult: 1.15 },
+    HC: { freqMult: 0.8, decayMult: 1.1 },
+    OH: { freqMult: 0.9, decayMult: 1.3 },
+    LT: { freqMult: 0.75, decayMult: 1.4 },
+    HT: { freqMult: 0.65, decayMult: 1.2 },
+  },
+  '909': {
+    BD: { freqMult: 0.85, decayMult: 0.7 },
+    SD: { freqMult: 1.2, decayMult: 0.8 },
+    HC: { freqMult: 1.25, decayMult: 0.5 },
+    OH: { freqMult: 1.1, decayMult: 0.7 },
+    LT: { freqMult: 1.3, decayMult: 0.6 },
+    HT: { freqMult: 1.2, decayMult: 0.6 },
+  }
+} as const;
+
 export const INITIAL_PATTERN = (id: string, name: string): Pattern => ({
   id,
   name,
@@ -21,10 +40,13 @@ export const INITIAL_PROJECT: Project = {
   swing: 0,
   patterns: [INITIAL_PATTERN('p1', 'Pattern 1')],
   arrangement: [{ id: 'a1', patternId: 'p1', startStep: 0, length: 16 }],
+  drumKit: '808',
   mixer: {
-    drums: { volume: 0.8, eq: { low: 0, mid: 0, high: 0 } },
-    bass: { volume: 0.8, eq: { low: 0, mid: 0, high: 0 } },
-    synth: { volume: 0.7, eq: { low: 0, mid: 0, high: 0 } },
+    drums: { volume: 0.8, eq: { low: 0, mid: 0, high: 0 }, reverb: 0, delay: { time: 0.3, feedback: 0.3, mix: 0 } },
+    bass: { volume: 0.8, eq: { low: 0, mid: 0, high: 0 }, reverb: 0, delay: { time: 0.3, feedback: 0.3, mix: 0 } },
+    synth: { volume: 0.7, eq: { low: 0, mid: 0, high: 0 }, reverb: 0, delay: { time: 0.3, feedback: 0.3, mix: 0 } },
     master: { volume: 1.0, drive: 0, reverb: 0.2, delay: { time: 0.3, feedback: 0.3, mix: 0 } }
-  }
+  },
+  bassParams: { waveform: 'sawtooth', octave: 2, cutoff: 0.5, resonance: 0.2, envMod: 0.5, decay: 0.5 },
+  synthParams: { octave: 4, attack: 0.5, release: 0.5, cutoff: 0.5, detune: 0.5 }
 };

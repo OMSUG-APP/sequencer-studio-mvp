@@ -34,25 +34,26 @@ export interface MasterDelay {
 }
 
 export interface Project {
-  name: string; 
-  bpm: number; 
+  name: string;
+  bpm: number;
   swing: number;
   patterns: Pattern[];
   arrangement: ArrangementRegion[];
-  
+
+  drumKit?: '808' | '909';
   drumParams?: Record<string, DrumVoiceParams>;
-  bassParams?: { waveform: 'sawtooth' | 'square'; cutoff: number; resonance: number; envMod: number; decay: number; };
-  synthParams?: { attack: number; release: number; cutoff: number; detune: number; };
-  
+  bassParams?: { waveform: 'sawtooth' | 'square'; octave: number; cutoff: number; resonance: number; envMod: number; decay: number; };
+  synthParams?: { octave: number; attack: number; release: number; cutoff: number; detune: number; };
+
   mixer: {
     drums: ChannelMixer;
     bass: ChannelMixer;
     synth: ChannelMixer;
-    master: { 
-      volume: number; 
-      drive: number; 
-      reverb: number; 
-      delay: MasterDelay; 
+    master: {
+      volume: number;
+      drive: number;
+      reverb: number;
+      delay: MasterDelay;
     };
   };
 }

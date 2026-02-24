@@ -1,19 +1,41 @@
-export const createDrumEngine = (ctx: BaseAudioContext, dest: AudioNode) => {
+export const createDrumEngine = (ctx: BaseAudioContext, dest: AudioNode, drumKit: '808' | '909' = '808') => {
+  // Import profiles - using inline to avoid circular dependency
+  const profiles = {
+    '808': {
+      BD: { freqMult: 1.0, decayMult: 1.2 },
+      SD: { freqMult: 1.0, decayMult: 1.15 },
+      HC: { freqMult: 0.8, decayMult: 1.1 },
+      OH: { freqMult: 0.9, decayMult: 1.3 },
+      LT: { freqMult: 0.75, decayMult: 1.4 },
+      HT: { freqMult: 0.65, decayMult: 1.2 },
+    },
+    '909': {
+      BD: { freqMult: 0.85, decayMult: 0.7 },
+      SD: { freqMult: 1.2, decayMult: 0.8 },
+      HC: { freqMult: 1.25, decayMult: 0.5 },
+      OH: { freqMult: 1.1, decayMult: 0.7 },
+      LT: { freqMult: 1.3, decayMult: 0.6 },
+      HT: { freqMult: 1.2, decayMult: 0.6 },
+    }
+  };
+
+  const kit = profiles[drumKit];
+
   const playBD = (time: number, velocity: number, p = {tune: 0.5, decay: 0.5}) => {
     const osc = ctx.createOscillator(); const gain = ctx.createGain();
     osc.connect(gain); gain.connect(dest);
-    const baseFreq = 50 + (p.tune * 200); const decayTime = 0.1 + (p.decay * 0.8); 
+    const baseFreq = (50 + (p.tune * 200)) * kit.BD.freqMult; const decayTime = (0.1 + (p.decay * 0.8)) * kit.BD.decayMult;
     osc.frequency.setValueAtTime(baseFreq, time); osc.frequency.exponentialRampToValueAtTime(0.01, time + decayTime);
     gain.gain.setValueAtTime(velocity, time); gain.gain.exponentialRampToValueAtTime(0.01, time + decayTime);
     osc.start(time); osc.stop(time + decayTime);
   };
-  
+
   const playSD = (time: number, velocity: number, p = {tune: 0.5, decay: 0.5}) => {
-    const noise = ctx.createBufferSource(); const noiseDecay = 0.1 + (p.decay * 0.3);
+    const noise = ctx.createBufferSource(); const noiseDecay = (0.1 + (p.decay * 0.3)) * kit.SD.decayMult;
     const bufferSize = ctx.sampleRate * noiseDecay; const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
     const data = buffer.getChannelData(0); for (let i = 0; i < bufferSize; i++) data[i] = Math.random() * 2 - 1;
     noise.buffer = buffer;
-    const noiseFilter = ctx.createBiquadFilter(); noiseFilter.type = 'highpass'; noiseFilter.frequency.setValueAtTime(500 + (p.tune * 1000), time);
+    const noiseFilter = ctx.createBiquadFilter(); noiseFilter.type = 'highpass'; noiseFilter.frequency.setValueAtTime((500 + (p.tune * 1000)) * kit.SD.freqMult, time);
     const noiseGain = ctx.createGain(); noiseGain.gain.setValueAtTime(velocity * 0.5, time); noiseGain.gain.exponentialRampToValueAtTime(0.01, time + noiseDecay);
     const osc = ctx.createOscillator(); osc.type = 'triangle'; osc.frequency.setValueAtTime(100 + (p.tune * 150), time);
     const oscGain = ctx.createGain(); oscGain.gain.setValueAtTime(velocity * 0.5, time); oscGain.gain.exponentialRampToValueAtTime(0.01, time + 0.1);
@@ -21,49 +43,46 @@ export const createDrumEngine = (ctx: BaseAudioContext, dest: AudioNode) => {
     osc.connect(oscGain); oscGain.connect(dest);
     noise.start(time); osc.start(time); osc.stop(time + Math.max(noiseDecay, 0.1));
   };
-  
+
   const playHC = (time: number, velocity: number, p = {tune: 0.5, decay: 0.5}) => {
-    const noise = ctx.createBufferSource(); const decayTime = 0.02 + (p.decay * 0.1);
+    const noise = ctx.createBufferSource(); const decayTime = (0.02 + (p.decay * 0.1)) * kit.HC.decayMult;
     const bufferSize = ctx.sampleRate * decayTime; const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
     const data = buffer.getChannelData(0); for (let i = 0; i < bufferSize; i++) data[i] = Math.random() * 2 - 1;
     noise.buffer = buffer;
-    const filter = ctx.createBiquadFilter(); filter.type = 'highpass'; filter.frequency.setValueAtTime(5000 + (p.tune * 4000), time);
+    const filter = ctx.createBiquadFilter(); filter.type = 'highpass'; filter.frequency.setValueAtTime((5000 + (p.tune * 4000)) * kit.HC.freqMult, time);
     const gain = ctx.createGain(); gain.gain.setValueAtTime(velocity * 0.3, time); gain.gain.exponentialRampToValueAtTime(0.01, time + decayTime);
     noise.connect(filter); filter.connect(gain); gain.connect(dest); noise.start(time);
   };
-  
+
   const playOH = (time: number, velocity: number, p = {tune: 0.5, decay: 0.5}) => {
-    const noise = ctx.createBufferSource(); const decayTime = 0.1 + (p.decay * 0.4);
+    const noise = ctx.createBufferSource(); const decayTime = (0.1 + (p.decay * 0.4)) * kit.OH.decayMult;
     const bufferSize = ctx.sampleRate * decayTime; const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
     const data = buffer.getChannelData(0); for (let i = 0; i < bufferSize; i++) data[i] = Math.random() * 2 - 1;
     noise.buffer = buffer;
-    const filter = ctx.createBiquadFilter(); filter.type = 'highpass'; filter.frequency.setValueAtTime(5000 + (p.tune * 4000), time);
+    const filter = ctx.createBiquadFilter(); filter.type = 'highpass'; filter.frequency.setValueAtTime((5000 + (p.tune * 4000)) * kit.OH.freqMult, time);
     const gain = ctx.createGain(); gain.gain.setValueAtTime(velocity * 0.3, time); gain.gain.exponentialRampToValueAtTime(0.01, time + decayTime);
     noise.connect(filter); filter.connect(gain); gain.connect(dest); noise.start(time);
   };
 
-  // NEW: LT (Open Hat) - Longer decay than OH
   const playLT = (time: number, velocity: number, p = {tune: 0.5, decay: 0.5}) => {
-    const noise = ctx.createBufferSource(); const decayTime = 0.3 + (p.decay * 0.8); // Longer decay
+    const noise = ctx.createBufferSource(); const decayTime = (0.3 + (p.decay * 0.8)) * kit.LT.decayMult;
     const bufferSize = ctx.sampleRate * decayTime; const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
     const data = buffer.getChannelData(0); for (let i = 0; i < bufferSize; i++) data[i] = Math.random() * 2 - 1;
     noise.buffer = buffer;
-    const filter = ctx.createBiquadFilter(); filter.type = 'highpass'; filter.frequency.setValueAtTime(4000 + (p.tune * 4000), time);
+    const filter = ctx.createBiquadFilter(); filter.type = 'highpass'; filter.frequency.setValueAtTime((4000 + (p.tune * 4000)) * kit.LT.freqMult, time);
     const gain = ctx.createGain(); gain.gain.setValueAtTime(velocity * 0.3, time); gain.gain.exponentialRampToValueAtTime(0.01, time + decayTime);
     noise.connect(filter); filter.connect(gain); gain.connect(dest); noise.start(time);
   };
 
-  // NEW: HT (Rim / High Tom) - Short, punchy oscillator ping
   const playHT = (time: number, velocity: number, p = {tune: 0.5, decay: 0.5}) => {
     const osc = ctx.createOscillator(); const gain = ctx.createGain();
     osc.connect(gain); gain.connect(dest);
-    const baseFreq = 300 + (p.tune * 400); const decayTime = 0.05 + (p.decay * 0.2); 
+    const baseFreq = (300 + (p.tune * 400)) * kit.HT.freqMult; const decayTime = (0.05 + (p.decay * 0.2)) * kit.HT.decayMult;
     osc.frequency.setValueAtTime(baseFreq, time); osc.frequency.exponentialRampToValueAtTime(baseFreq * 0.8, time + decayTime);
     gain.gain.setValueAtTime(velocity * 0.6, time); gain.gain.exponentialRampToValueAtTime(0.01, time + decayTime);
     osc.start(time); osc.stop(time + decayTime);
   };
 
-  // Export all 6 drum sounds!
   return { playBD, playSD, playHC, playOH, playLT, playHT };
 };
 
@@ -119,9 +138,9 @@ export const createSynthEngine = (ctx: BaseAudioContext, dest: AudioNode) => {
   return { playNote };
 };
 
-export const noteToFreq = (note: string) => {
+export const noteToFreq = (note: string, octaveShift: number = 0) => {
   const notes = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
-  const name = note.slice(0, -1); const octave = parseInt(note.slice(-1));
+  const name = note.slice(0, -1); const octave = parseInt(note.slice(-1)) + octaveShift;
   const semitones = notes.indexOf(name) + (octave + 1) * 12;
   return 440 * Math.pow(2, (semitones - 69) / 12);
 };
