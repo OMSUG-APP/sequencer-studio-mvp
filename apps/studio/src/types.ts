@@ -41,6 +41,7 @@ export interface Project {
   arrangement: ArrangementRegion[];
 
   drumKit?: '808' | '909';
+  bassPreset?: string;
   drumParams?: Record<string, DrumVoiceParams>;
   bassParams?: { waveform: 'sawtooth' | 'square'; octave: number; cutoff: number; resonance: number; envMod: number; decay: number; };
   synthParams?: { octave: number; attack: number; release: number; cutoff: number; detune: number; };

@@ -1,5 +1,12 @@
 import { Project, Pattern } from './types';
 
+export const BASS_PRESETS: Record<string, { waveform: 'sawtooth' | 'square'; octave: number; cutoff: number; resonance: number; envMod: number; decay: number }> = {
+  '303':   { waveform: 'sawtooth', octave: 2, cutoff: 0.35, resonance: 0.75, envMod: 0.8,  decay: 0.3  },
+  'ORGAN': { waveform: 'square',   octave: 3, cutoff: 0.70, resonance: 0.05, envMod: 0.05, decay: 0.7  },
+  'WOBBLE':{ waveform: 'sawtooth', octave: 2, cutoff: 0.20, resonance: 0.65, envMod: 0.6,  decay: 0.15 },
+  'SUB':   { waveform: 'square',   octave: 1, cutoff: 0.18, resonance: 0.05, envMod: 0.05, decay: 0.9  },
+};
+
 export const DRUM_KIT_PROFILES = {
   '808': {
     BD: { freqMult: 1.0, decayMult: 1.2 },

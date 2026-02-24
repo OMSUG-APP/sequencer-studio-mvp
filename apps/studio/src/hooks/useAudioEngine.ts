@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Project } from '../types';
+import { Project, ChannelMixer } from '../types';
 import { createDrumEngine, createBassEngine, createSynthEngine, noteToFreq } from '../utils/audio';
 
 function makeDistortionCurve(amount: number) {
@@ -111,8 +111,8 @@ export const useAudioEngine = (project: Project) => {
       if (inst === 'SD') layerEngine.playSD(adjustedTime, s.velocity, p);
       if (inst === 'HC') layerEngine.playHC(adjustedTime, s.velocity, p);
       if (inst === 'OH') layerEngine.playOH(adjustedTime, s.velocity, p);
-      if (inst === 'LT') layerEngine.playLT ? layerEngine.playLT(adjustedTime, s.velocity, p) : layerEngine.playCH?.(adjustedTime, s.velocity, p);
-      if (inst === 'HT') layerEngine.playHT ? layerEngine.playHT(adjustedTime, s.velocity, p) : layerEngine.playRM?.(adjustedTime, s.velocity, p);
+      if (inst === 'LT') layerEngine.playLT(adjustedTime, s.velocity, p);
+      if (inst === 'HT') layerEngine.playHT(adjustedTime, s.velocity, p);
     });
 
     // BASS SCHEDULING
@@ -174,9 +174,10 @@ export const useAudioEngine = (project: Project) => {
     if (synthReverbSendRef.current) synthReverbSendRef.current.gain.value = synth.reverb ?? 0;
 
     // Per-channel delay sends (mix = send amount)
-    const drumDelay = drums.delay || {};
-    const bassDelay = bass.delay || {};
-    const synthDelay = synth.delay || {};
+    const emptyDelay = { time: 0.3, feedback: 0.3, mix: 0 };
+    const drumDelay = drums.delay || emptyDelay;
+    const bassDelay = bass.delay || emptyDelay;
+    const synthDelay = synth.delay || emptyDelay;
 
     if (drumDelaySendRef.current) drumDelaySendRef.current.gain.value = drumDelay.mix ?? 0;
     if (bassDelaySendRef.current) bassDelaySendRef.current.gain.value = bassDelay.mix ?? 0;
@@ -301,8 +302,9 @@ export const useAudioEngine = (project: Project) => {
   }, [isPlaying, scheduler, applyMixerToAudio]);
 
   useEffect(() => {
-    const m = project?.mixer || {};
-    const drums = m.drums || {}; const bass = m.bass || {}; const synth = m.synth || {}; const master = m.master || {};
+    const m = project?.mixer;
+    const emptyChannel: ChannelMixer = { volume: 0, eq: { low: 0, mid: 0, high: 0 } };
+    const drums = m?.drums || emptyChannel; const bass = m?.bass || emptyChannel; const synth = m?.synth || emptyChannel; const master = m?.master || { volume: 1.0, drive: 0, reverb: 0, delay: { time: 0.3, feedback: 0.3, mix: 0 } };
     
     if (drumGainRef.current) drumGainRef.current.gain.value = drums.volume ?? 0.8;
     if (bassGainRef.current) bassGainRef.current.gain.value = bass.volume ?? 0.8;
@@ -327,9 +329,10 @@ export const useAudioEngine = (project: Project) => {
     if (synthReverbSendRef.current) synthReverbSendRef.current.gain.value = synth.reverb ?? 0;
 
     // Per-channel delay sends (mix = send amount)
-    const drumDelay = drums.delay || {};
-    const bassDelay = bass.delay || {};
-    const synthDelay = synth.delay || {};
+    const emptyDelay = { time: 0.3, feedback: 0.3, mix: 0 };
+    const drumDelay = drums.delay || emptyDelay;
+    const bassDelay = bass.delay || emptyDelay;
+    const synthDelay = synth.delay || emptyDelay;
 
     if (drumDelaySendRef.current) drumDelaySendRef.current.gain.value = drumDelay.mix ?? 0;
     if (bassDelaySendRef.current) bassDelaySendRef.current.gain.value = bassDelay.mix ?? 0;

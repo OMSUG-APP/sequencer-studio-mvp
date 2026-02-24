@@ -3,7 +3,7 @@ import { TransportBar } from './components/TransportBar';
 import { PatternEditor } from './components/PatternEditor';
 import { MixerView } from './components/MixerView';
 import { useAudioEngine } from './hooks/useAudioEngine';
-import { INITIAL_PROJECT } from './constants';
+import { INITIAL_PROJECT, INITIAL_PATTERN, BASS_PRESETS } from './constants';
 import { Project, DrumInstrument } from './types';
 import { Download } from 'lucide-react';
 import { renderToWav } from './utils/export';
@@ -115,6 +115,10 @@ export default function App() {
       ...prev,
       drumKit: kit
     }));
+  };
+
+  const handleApplyBassPreset = (preset: typeof BASS_PRESETS[string], name: string) => {
+    setProject(prev => ({ ...prev, bassPreset: name, bassParams: { ...preset } }));
   };
 
   const handleUpdateBassParam = (param: string, value: any) => {
@@ -244,7 +248,9 @@ export default function App() {
               drumParams={project.drumParams}
               onUpdateDrumParam={handleUpdateDrumParam}
               bassParams={project.bassParams}
+              bassPreset={project.bassPreset}
               onUpdateBassParam={handleUpdateBassParam}
+              onApplyBassPreset={handleApplyBassPreset}
               synthParams={project.synthParams}
               onUpdateSynthParam={handleUpdateSynthParam}
             />

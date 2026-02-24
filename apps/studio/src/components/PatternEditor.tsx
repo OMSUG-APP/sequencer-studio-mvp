@@ -1,5 +1,6 @@
 import React from 'react';
 import { Pattern, DrumInstrument } from '../types';
+import { BASS_PRESETS } from '../constants';
 
 interface PatternEditorProps {
   pattern: Pattern;
@@ -11,9 +12,11 @@ interface PatternEditorProps {
   onDrumKitChange?: (kit: '808' | '909') => void;
   drumParams?: Record<string, { tune: number; decay: number; mute?: boolean; solo?: boolean }>;
   onUpdateDrumParam: (inst: string, param: string, value: any) => void;
-  bassParams?: { waveform: string; cutoff: number; resonance: number; envMod: number; decay: number };
+  bassParams?: { waveform: string; octave?: number; cutoff: number; resonance: number; envMod: number; decay: number };
+  bassPreset?: string;
   onUpdateBassParam: (param: string, value: any) => void;
-  synthParams?: { attack: number; release: number; cutoff: number; detune: number };
+  onApplyBassPreset?: (preset: typeof BASS_PRESETS[string], name: string) => void;
+  synthParams?: { octave?: number; attack: number; release: number; cutoff: number; detune: number };
   onUpdateSynthParam: (param: string, value: any) => void;
 }
 
@@ -22,7 +25,7 @@ const SYNTH_NOTES = ['B', 'A#', 'A', 'G#', 'G', 'F#', 'F', 'E', 'D#', 'D', 'C#',
 
 export function PatternEditor({
   pattern, currentStep, onToggleDrumStep, onToggleBassStep, onToggleSynthStep,
-  drumKit, onDrumKitChange, drumParams = {}, onUpdateDrumParam, bassParams, onUpdateBassParam, synthParams, onUpdateSynthParam
+  drumKit, onDrumKitChange, drumParams = {}, onUpdateDrumParam, bassParams, bassPreset, onUpdateBassParam, onApplyBassPreset, synthParams, onUpdateSynthParam
 }: PatternEditorProps) {
   
   const formatDrumName = (name: string) => {
@@ -131,6 +134,15 @@ export function PatternEditor({
         <div className="flex items-center justify-between mb-4">
           <div className="text-xs font-bold text-[#f97316] tracking-widest uppercase">Bass Synthesizer</div>
           <div className="flex items-center gap-4 bg-[#0a0a0a] p-2 rounded border border-[#27272a]">
+            {/* Bass Presets */}
+            <div className="flex items-center gap-1 border-r border-[#27272a] pr-4">
+              {Object.keys(BASS_PRESETS).map(name => (
+                <button key={name} onClick={() => onApplyBassPreset?.(BASS_PRESETS[name], name)}
+                  className={`px-2 py-1 text-[9px] font-bold rounded transition-colors ${bassPreset === name ? 'bg-[#f97316] text-black' : 'bg-[#27272a] text-[#a1a1aa] hover:bg-[#3f3f46]'}`}>
+                  {name}
+                </button>
+              ))}
+            </div>
             <button onClick={() => onUpdateBassParam('waveform', bp.waveform === 'sawtooth' ? 'square' : 'sawtooth')} className="px-3 py-1 bg-[#1a1a1a] border border-[#3f3f46] hover:bg-[#27272a] rounded text-[10px] font-bold text-[#f97316] transition-colors">{bp.waveform === 'sawtooth' ? 'SAW' : 'SQR'}</button>
             <div className="flex gap-4">
               {[{ label: 'Cutoff', key: 'cutoff' }, { label: 'Res', key: 'resonance' }, { label: 'Env', key: 'envMod' }, { label: 'Decay', key: 'decay' }].map(({ label, key }) => (
@@ -150,7 +162,7 @@ export function PatternEditor({
               <div className="w-8 text-[10px] font-bold text-[#a1a1aa] tracking-wider text-right pr-1">{note}</div>
               <div className="flex-1 grid grid-cols-16 gap-1">
                 {pattern.bass.map((step: any, i: number) => {
-                  const fullNote = `${note}2`; const isActive = step.active && step.note === fullNote;
+                  const fullNote = `${note}${bp.octave || 2}`; const isActive = step.active && step.note === fullNote;
                   return <button key={i} onClick={() => onToggleBassStep(i, fullNote)} className={`h-6 rounded-sm border transition-all duration-75 ${isActive ? 'bg-[#f97316] border-[#ea580c] shadow-[0_0_8px_rgba(249,115,22,0.4)]' : 'bg-[#1a1a1a] border-[#27272a] hover:bg-[#27272a]'} ${currentStep === i ? 'ring-1 ring-white z-10' : ''}`} />
                 })}
               </div>
@@ -182,7 +194,7 @@ export function PatternEditor({
               <div className="w-8 text-[10px] font-bold text-[#a1a1aa] tracking-wider text-right pr-1">{note}</div>
               <div className="flex-1 grid grid-cols-16 gap-1">
                 {(pattern.synth || Array(16).fill({ active: false, note: '' })).map((step: any, i: number) => {
-                  const fullNote = `${note}4`;
+                  const fullNote = `${note}${sp.octave || 4}`;
                   const isActive = step.active && step.note === fullNote;
                   return <button key={i} onClick={() => onToggleSynthStep(i, fullNote)} className={`h-6 rounded-sm border transition-all duration-75 ${isActive ? 'bg-[#8b5cf6] border-[#7c3aed] shadow-[0_0_8px_rgba(139,92,246,0.4)]' : 'bg-[#1a1a1a] border-[#27272a] hover:bg-[#27272a]'} ${currentStep === i ? 'ring-1 ring-white z-10' : ''}`} />
                 })}

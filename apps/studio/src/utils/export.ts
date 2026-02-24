@@ -110,7 +110,7 @@ export const renderToWav = async (
           layerGain.gain.value = 1.0;
           layerGain.connect(drumInput);
           
-          const engine = createDrumEngine(ctx, layerGain);
+          const engine = createDrumEngine(ctx, layerGain, project.drumKit || '808');
           const vel = steps[step].velocity ?? 0.8;
           
           if (inst === 'BD') engine.playBD(time, vel, p);
