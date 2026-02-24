@@ -1,6 +1,6 @@
 import React from 'react';
 import { Pattern, DrumInstrument } from '../types';
-import { BASS_PRESETS } from '../constants';
+import { BASS_PRESETS, SYNTH_PRESETS } from '../constants';
 
 interface PatternEditorProps {
   pattern: Pattern;
@@ -17,7 +17,9 @@ interface PatternEditorProps {
   onUpdateBassParam: (param: string, value: any) => void;
   onApplyBassPreset?: (preset: typeof BASS_PRESETS[string], name: string) => void;
   synthParams?: { octave?: number; attack: number; release: number; cutoff: number; detune: number };
+  synthPreset?: string;
   onUpdateSynthParam: (param: string, value: any) => void;
+  onApplySynthPreset?: (preset: typeof SYNTH_PRESETS[string], name: string) => void;
 }
 
 const BASS_NOTES = ['B', 'A#', 'A', 'G#', 'G', 'F#', 'F', 'E', 'D#', 'D', 'C#', 'C'];
@@ -25,7 +27,7 @@ const SYNTH_NOTES = ['B', 'A#', 'A', 'G#', 'G', 'F#', 'F', 'E', 'D#', 'D', 'C#',
 
 export function PatternEditor({
   pattern, currentStep, onToggleDrumStep, onToggleBassStep, onToggleSynthStep,
-  drumKit, onDrumKitChange, drumParams = {}, onUpdateDrumParam, bassParams, bassPreset, onUpdateBassParam, onApplyBassPreset, synthParams, onUpdateSynthParam
+  drumKit, onDrumKitChange, drumParams = {}, onUpdateDrumParam, bassParams, bassPreset, onUpdateBassParam, onApplyBassPreset, synthParams, synthPreset, onUpdateSynthParam, onApplySynthPreset
 }: PatternEditorProps) {
   
   const formatDrumName = (name: string) => {
@@ -176,6 +178,15 @@ export function PatternEditor({
         <div className="flex items-center justify-between mb-4">
           <div className="text-xs font-bold text-[#8b5cf6] tracking-widest uppercase">Atmospheric Pad</div>
           <div className="flex items-center gap-4 bg-[#0a0a0a] p-2 rounded border border-[#27272a]">
+            {/* Synth Presets */}
+            <div className="flex items-center gap-1 border-r border-[#27272a] pr-4">
+              {Object.keys(SYNTH_PRESETS).map(name => (
+                <button key={name} onClick={() => onApplySynthPreset?.(SYNTH_PRESETS[name], name)}
+                  className={`px-2 py-1 text-[9px] font-bold rounded transition-colors ${synthPreset === name ? 'bg-[#8b5cf6] text-white' : 'bg-[#27272a] text-[#a1a1aa] hover:bg-[#3f3f46]'}`}>
+                  {name}
+                </button>
+              ))}
+            </div>
             <div className="flex gap-4">
               {[{ label: 'Attack', key: 'attack' }, { label: 'Release', key: 'release' }, { label: 'Cutoff', key: 'cutoff' }, { label: 'Detune', key: 'detune' }].map(({ label, key }) => (
                 <div key={key} className="flex flex-col items-center gap-1 w-12"><span className="text-[9px] text-[#a1a1aa] uppercase">{label}</span><input type="range" min="0" max="1" step="0.01" value={(sp as any)[key]} onChange={e => onUpdateSynthParam(key, parseFloat(e.target.value))} className="w-full h-1 bg-[#1a1a1a] rounded-lg cursor-pointer accent-[#8b5cf6]" /></div>

@@ -7,6 +7,13 @@ export const BASS_PRESETS: Record<string, { waveform: 'sawtooth' | 'square'; oct
   'SUB':   { waveform: 'square',   octave: 1, cutoff: 0.18, resonance: 0.05, envMod: 0.05, decay: 0.9  },
 };
 
+export const SYNTH_PRESETS: Record<string, { octave: number; attack: number; release: number; cutoff: number; detune: number }> = {
+  'ORGANIC':  { octave: 4, attack: 0.35, release: 0.55, cutoff: 0.55, detune: 0.2  },
+  'METAL':    { octave: 4, attack: 0.05, release: 0.25, cutoff: 0.85, detune: 0.75 },
+  'HEAVENLY': { octave: 5, attack: 0.65, release: 0.80, cutoff: 0.45, detune: 0.4  },
+  'TEXTURED': { octave: 3, attack: 0.25, release: 0.50, cutoff: 0.25, detune: 0.85 },
+};
+
 export const DRUM_KIT_PROFILES = {
   '808': {
     BD: { freqMult: 1.0, decayMult: 1.2 },
