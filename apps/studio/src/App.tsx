@@ -6,7 +6,7 @@ import { SamplerView } from './components/sampler';
 import { useAudioEngine } from './hooks/useAudioEngine';
 import { useSampler } from './hooks/useSampler';
 import { INITIAL_PROJECT, INITIAL_PATTERN, BASS_PRESETS, SYNTH_PRESETS } from './constants';
-import { Project, DrumInstrument } from './types';
+import { Project, DrumInstrument, Step, NoteStep } from './types';
 import { Download } from 'lucide-react';
 import { renderToWav } from './utils/export';
 
@@ -145,6 +145,23 @@ export default function App() {
       );
       return { ...p, samplerSteps: next };
     });
+  };
+
+  // ── Generator "set entire section" handlers ──────────────────────────────
+  const handleSetDrumSteps = (steps: Record<DrumInstrument, Step[]>) => {
+    updateActivePattern(p => ({ ...p, drums: steps }));
+  };
+
+  const handleSetBassSteps = (steps: NoteStep[]) => {
+    updateActivePattern(p => ({ ...p, bass: steps }));
+  };
+
+  const handleSetSynthSteps = (steps: NoteStep[]) => {
+    updateActivePattern(p => ({ ...p, synth: steps }));
+  };
+
+  const handleSetSamplerSteps = (steps: boolean[][]) => {
+    updateActivePattern(p => ({ ...p, samplerSteps: steps }));
   };
 
   const handleApplySynthPreset = (preset: typeof SYNTH_PRESETS[string], name: string) => {
@@ -306,6 +323,10 @@ export default function App() {
                 padLoadStatus={sampler.padLoadStatus}
                 samplerSteps={activePattern.samplerSteps}
                 onToggleSamplerStep={handleToggleSamplerStep}
+                onSetDrumSteps={handleSetDrumSteps}
+                onSetBassSteps={handleSetBassSteps}
+                onSetSynthSteps={handleSetSynthSteps}
+                onSetSamplerSteps={handleSetSamplerSteps}
               />
             </div>
           ) : (

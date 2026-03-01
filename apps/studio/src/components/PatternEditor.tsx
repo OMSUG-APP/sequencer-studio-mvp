@@ -1,6 +1,12 @@
-import React from 'react';
-import { Pattern, DrumInstrument, SamplerPad, PadLoadStatus } from '../types';
+import React, { useState } from 'react';
+import { Shuffle } from 'lucide-react';
+import { Pattern, DrumInstrument, Step, NoteStep, SamplerPad, PadLoadStatus } from '../types';
 import { BASS_PRESETS, SYNTH_PRESETS } from '../constants';
+import {
+  DrumStyle, Density, MusicalKey, ScaleName,
+  MUSICAL_KEYS, SCALE_NAMES, DRUM_STYLES, DRUM_STYLE_LABELS,
+  generateDrumPattern, generateBassPattern, generateSynthPattern, generateSamplerSteps,
+} from '../utils/patternGenerator';
 
 interface PatternEditorProps {
   pattern: Pattern;
@@ -25,13 +31,44 @@ interface PatternEditorProps {
   padLoadStatus?: PadLoadStatus[];
   samplerSteps?: boolean[][];
   onToggleSamplerStep?: (padId: number, step: number) => void;
+  // Pattern set callbacks (used by generator)
+  onSetDrumSteps?: (steps: Record<DrumInstrument, Step[]>) => void;
+  onSetBassSteps?: (steps: NoteStep[]) => void;
+  onSetSynthSteps?: (steps: NoteStep[]) => void;
+  onSetSamplerSteps?: (steps: boolean[][]) => void;
 }
 
 const BASS_NOTES  = ['B', 'A#', 'A', 'G#', 'G', 'F#', 'F', 'E', 'D#', 'D', 'C#', 'C'];
 const SYNTH_NOTES = ['B', 'A#', 'A', 'G#', 'G', 'F#', 'F', 'E', 'D#', 'D', 'C#', 'C'];
+const GRID_MIN_W  = 'min-w-[520px]';
 
-// Minimum width to keep all 16 steps legible
-const GRID_MIN_W = 'min-w-[520px]';
+// ─── Pill button ──────────────────────────────────────────────────────────────
+const Pill = ({ label, active, color = '#FF5F00', onClick }: {
+  label: string; active: boolean; color?: string; onClick: () => void;
+}) => (
+  <button
+    onClick={onClick}
+    className="px-2 py-0.5 text-[9px] font-bold rounded transition-colors uppercase tracking-widest"
+    style={active
+      ? { background: color, color: color === '#FF5F00' ? '#000' : '#fff' }
+      : { background: '#1a1a1e', color: '#8A8A94', border: '1px solid #242428' }}
+  >
+    {label}
+  </button>
+);
+
+// ─── Generate button ──────────────────────────────────────────────────────────
+const GenBtn = ({ onClick }: { onClick: () => void }) => (
+  <button
+    onClick={onClick}
+    className="flex items-center gap-1 px-2 py-1 text-[9px] font-bold rounded border border-[#242428] hover:border-[#FF5F00] hover:text-[#FF5F00] text-[#555] transition-colors uppercase tracking-widest flex-shrink-0"
+  >
+    <Shuffle size={9} />
+    Generate
+  </button>
+);
+
+// ─── Component ────────────────────────────────────────────────────────────────
 
 export function PatternEditor({
   pattern, currentStep, onToggleDrumStep, onToggleBassStep, onToggleSynthStep,
@@ -39,15 +76,85 @@ export function PatternEditor({
   bassParams, bassPreset, onUpdateBassParam, onApplyBassPreset,
   synthParams, synthPreset, onUpdateSynthParam, onApplySynthPreset,
   samplerPads = [], padLoadStatus = [], samplerSteps = [], onToggleSamplerStep,
+  onSetDrumSteps, onSetBassSteps, onSetSynthSteps, onSetSamplerSteps,
 }: PatternEditorProps) {
 
   const bp = bassParams  || { waveform: 'sawtooth', cutoff: 0.5, resonance: 0.2, envMod: 0.5, decay: 0.5 };
   const sp = synthParams || { attack: 0.5, release: 0.5, cutoff: 0.5, detune: 0.5 };
 
+  // ── Generator settings (local state — no need to persist) ─────────────────
+  const [genKey,     setGenKey]     = useState<MusicalKey>('A');
+  const [genScale,   setGenScale]   = useState<ScaleName>('Minor');
+  const [genStyle,   setGenStyle]   = useState<DrumStyle>('house');
+  const [genDensity, setGenDensity] = useState<Density>('mid');
+
+  // ── Generator handlers ────────────────────────────────────────────────────
+  const handleGenerateDrums = () => {
+    onSetDrumSteps?.(generateDrumPattern(genStyle, genDensity));
+  };
+
+  const handleGenerateBass = () => {
+    onSetBassSteps?.(generateBassPattern(genKey, genScale, genStyle, genDensity, bp.octave ?? 2));
+  };
+
+  const handleGenerateSynth = () => {
+    onSetSynthSteps?.(generateSynthPattern(genKey, genScale, genStyle, genDensity, sp.octave ?? 4));
+  };
+
+  const handleGenerateSampler = () => {
+    const loadedIds = samplerPads
+      .filter(p => padLoadStatus[p.id] === 'loaded')
+      .map(p => p.id);
+    onSetSamplerSteps?.(generateSamplerSteps(loadedIds, genStyle, genDensity));
+  };
+
+  // ── Select style ──────────────────────────────────────────────────────────
+  const selectCls = 'bg-[#1a1a1e] border border-[#242428] text-[#F0F0F2] text-[9px] rounded px-1.5 py-0.5 cursor-pointer focus:outline-none focus:border-[#FF5F00]';
+
   return (
     <div className="flex flex-col h-full">
 
-      {/* DRUM KIT SELECTOR */}
+      {/* ── GENERATOR BAR ─────────────────────────────────────────────────── */}
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 px-3 py-2 bg-[#0A0A0B] border-b border-[#FF5F00] border-opacity-20 mb-1">
+        <span className="text-[9px] font-bold text-[#FF5F00] uppercase tracking-widest flex items-center gap-1 flex-shrink-0">
+          <Shuffle size={10} />
+          Generator
+        </span>
+
+        {/* Key */}
+        <div className="flex items-center gap-1.5 flex-shrink-0">
+          <span className="text-[9px] text-[#8A8A94] uppercase tracking-widest">Key</span>
+          <select value={genKey} onChange={e => setGenKey(e.target.value as MusicalKey)} className={selectCls}>
+            {MUSICAL_KEYS.map(k => <option key={k} value={k}>{k}</option>)}
+          </select>
+        </div>
+
+        {/* Scale */}
+        <div className="flex items-center gap-1.5 flex-shrink-0">
+          <span className="text-[9px] text-[#8A8A94] uppercase tracking-widest">Scale</span>
+          <select value={genScale} onChange={e => setGenScale(e.target.value as ScaleName)} className={selectCls}>
+            {SCALE_NAMES.map(s => <option key={s} value={s}>{s}</option>)}
+          </select>
+        </div>
+
+        {/* Style */}
+        <div className="flex items-center gap-1 flex-shrink-0">
+          <span className="text-[9px] text-[#8A8A94] uppercase tracking-widest mr-1">Style</span>
+          {DRUM_STYLES.map(s => (
+            <Pill key={s} label={DRUM_STYLE_LABELS[s]} active={genStyle === s} onClick={() => setGenStyle(s)} />
+          ))}
+        </div>
+
+        {/* Density */}
+        <div className="flex items-center gap-1 flex-shrink-0">
+          <span className="text-[9px] text-[#8A8A94] uppercase tracking-widest mr-1">Density</span>
+          {(['low', 'mid', 'high'] as Density[]).map(d => (
+            <Pill key={d} label={d} active={genDensity === d} onClick={() => setGenDensity(d)} />
+          ))}
+        </div>
+      </div>
+
+      {/* ── DRUM KIT SELECTOR ──────────────────────────────────────────────── */}
       <div className="mb-4 flex items-center gap-3 px-3 py-2 bg-[#0A0A0B] border-b border-[#242428]">
         <span className="text-[9px] font-bold text-[#8A8A94] uppercase tracking-widest">Drum Kit</span>
         {(['808', '909'] as const).map(kit => (
@@ -64,22 +171,21 @@ export function PatternEditor({
             {kit}
           </button>
         ))}
+        <div className="ml-auto">
+          <GenBtn onClick={handleGenerateDrums} />
+        </div>
       </div>
 
-      {/* DRUMS SECTION — horizontally scrollable on narrow screens */}
+      {/* ── DRUMS GRID ─────────────────────────────────────────────────────── */}
       <div className="overflow-x-auto">
         <div className={`flex flex-col gap-2 ${GRID_MIN_W}`}>
           {Object.entries(pattern.drums).map(([inst, steps]) => {
-            const p = drumParams[inst] || { tune: 0.5, decay: 0.5, mute: false, solo: false };
+            const p        = drumParams[inst] || { tune: 0.5, decay: 0.5, mute: false, solo: false };
             const isMuted  = p.mute  ?? false;
             const isSoloed = p.solo  ?? false;
-
             return (
               <div key={inst} className="flex items-center gap-2">
-                {/* Label */}
                 <div className="w-7 flex-shrink-0 text-[10px] font-bold text-[#8A8A94] tracking-wider">{inst}</div>
-
-                {/* Mute / Solo */}
                 <div className="flex items-center gap-1 flex-shrink-0">
                   <button
                     onClick={() => onUpdateDrumParam(inst, 'mute', !isMuted)}
@@ -96,13 +202,11 @@ export function PatternEditor({
                       : { background: 'transparent', borderColor: '#333338', color: '#666' }}
                   >S</button>
                 </div>
-
-                {/* 16-step grid */}
                 <div className="flex-1 grid grid-cols-16 gap-1">
                   {steps.map((step: any, i: number) => {
-                    const isActive   = step.active;
-                    const isCurrent  = currentStep === i;
-                    const isLightBeat = Math.floor(i / 4) % 2 === 0; // beats 1-4 and 9-12
+                    const isActive    = step.active;
+                    const isCurrent   = currentStep === i;
+                    const isLightBeat = Math.floor(i / 4) % 2 === 0;
                     return (
                       <button
                         key={i}
@@ -127,7 +231,7 @@ export function PatternEditor({
         </div>
       </div>
 
-      {/* DRUM PARAMS */}
+      {/* ── DRUM PARAMS ────────────────────────────────────────────────────── */}
       <div className="mt-5 mb-2 flex gap-3 overflow-x-auto items-center pb-2">
         {(['BD', 'SD', 'HC', 'OH', 'LT', 'HT'] as const).map(inst => {
           const p = drumParams[inst] || { tune: 0.5, decay: 0.5 };
@@ -149,12 +253,14 @@ export function PatternEditor({
         })}
       </div>
 
-      {/* BASS SECTION */}
+      {/* ── BASS SECTION ───────────────────────────────────────────────────── */}
       <div className="mt-4 border-t border-[#242428] pt-5">
         <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
-          <div className="text-xs font-bold text-[#FF5F00] tracking-widest uppercase">Bass Synthesizer</div>
+          <div className="flex items-center gap-2">
+            <div className="text-xs font-bold text-[#FF5F00] tracking-widest uppercase">Bass Synthesizer</div>
+            <GenBtn onClick={handleGenerateBass} />
+          </div>
           <div className="flex items-center gap-3 bg-[#0A0A0B] p-2 rounded border border-[#242428] flex-wrap">
-            {/* Presets */}
             <div className="flex items-center gap-1 border-r border-[#242428] pr-3">
               {Object.keys(BASS_PRESETS).map(name => (
                 <button key={name} onClick={() => onApplyBassPreset?.(BASS_PRESETS[name], name)}
@@ -220,10 +326,13 @@ export function PatternEditor({
         </div>
       </div>
 
-      {/* SYNTH SECTION */}
+      {/* ── SYNTH SECTION ──────────────────────────────────────────────────── */}
       <div className="mt-7 border-t border-[#242428] pt-5 pb-8">
         <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
-          <div className="text-xs font-bold text-[#8b5cf6] tracking-widest uppercase">Atmospheric Pad</div>
+          <div className="flex items-center gap-2">
+            <div className="text-xs font-bold text-[#8b5cf6] tracking-widest uppercase">Atmospheric Pad</div>
+            <GenBtn onClick={handleGenerateSynth} />
+          </div>
           <div className="flex items-center gap-3 bg-[#0A0A0B] p-2 rounded border border-[#242428] flex-wrap">
             <div className="flex items-center gap-1 border-r border-[#242428] pr-3">
               {Object.keys(SYNTH_PRESETS).map(name => (
@@ -285,10 +394,11 @@ export function PatternEditor({
         </div>
       </div>
 
-      {/* SAMPLER SECTION */}
+      {/* ── SAMPLER SECTION ────────────────────────────────────────────────── */}
       <div className="mt-7 border-t border-[#242428] pt-5 pb-8">
-        <div className="text-xs font-bold text-[#FF5F00] tracking-widest uppercase mb-3">
-          Sample Pads
+        <div className="flex items-center gap-2 mb-3">
+          <div className="text-xs font-bold text-[#FF5F00] tracking-widest uppercase">Sample Pads</div>
+          <GenBtn onClick={handleGenerateSampler} />
         </div>
 
         {samplerPads.filter(p => padLoadStatus[p.id] === 'loaded').length === 0 ? (
@@ -304,7 +414,6 @@ export function PatternEditor({
                   const padSteps = samplerSteps[pad.id] || Array(16).fill(false);
                   return (
                     <div key={pad.id} className="flex items-center gap-2">
-                      {/* Color dot + label */}
                       <div className="w-7 flex-shrink-0 flex items-center gap-1">
                         <div className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: pad.color }} />
                         <span
@@ -315,8 +424,6 @@ export function PatternEditor({
                           {pad.label.slice(0, 4)}
                         </span>
                       </div>
-
-                      {/* 16-step grid */}
                       <div className="flex-1 grid grid-cols-16 gap-1">
                         {padSteps.map((active: boolean, i: number) => {
                           const isCurrent   = currentStep === i;
