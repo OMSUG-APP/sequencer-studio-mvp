@@ -137,13 +137,17 @@ export const useAudioEngine = (project: Project) => {
 
   const scheduler = useCallback(() => {
     if (!audioCtxRef.current) return;
-    while (nextNoteTimeRef.current < audioCtxRef.current.currentTime + 0.1) {
-      scheduleNote(stepRef.current, nextNoteTimeRef.current);
-      const bpm = projectRef.current?.bpm || 120;
-      const secondsPerStep = 60 / bpm / 4;
-      nextNoteTimeRef.current += secondsPerStep;
-      stepRef.current = (stepRef.current + 1) % 16;
-      setCurrentStep(stepRef.current);
+    try {
+      while (nextNoteTimeRef.current < audioCtxRef.current.currentTime + 0.1) {
+        setCurrentStep(stepRef.current); // show the step being played, not the next one
+        scheduleNote(stepRef.current, nextNoteTimeRef.current);
+        const bpm = projectRef.current?.bpm || 120;
+        const secondsPerStep = 60 / bpm / 4;
+        nextNoteTimeRef.current += secondsPerStep;
+        stepRef.current = (stepRef.current + 1) % 16;
+      }
+    } catch (e) {
+      console.error('[scheduler] note scheduling error:', e);
     }
     timerIDRef.current = window.setTimeout(scheduler, 25);
   }, [scheduleNote]);

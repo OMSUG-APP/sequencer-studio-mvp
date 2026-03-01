@@ -32,7 +32,7 @@ export const createDrumEngine = (ctx: BaseAudioContext, dest: AudioNode, drumKit
 
   const playSD = (time: number, velocity: number, p = {tune: 0.5, decay: 0.5}) => {
     const noise = ctx.createBufferSource(); const noiseDecay = (0.1 + (p.decay * 0.3)) * kit.SD.decayMult;
-    const bufferSize = ctx.sampleRate * noiseDecay; const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+    const bufferSize = Math.max(1, Math.floor(ctx.sampleRate * noiseDecay)); const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
     const data = buffer.getChannelData(0); for (let i = 0; i < bufferSize; i++) data[i] = Math.random() * 2 - 1;
     noise.buffer = buffer;
     const noiseFilter = ctx.createBiquadFilter(); noiseFilter.type = 'highpass'; noiseFilter.frequency.setValueAtTime((500 + (p.tune * 1000)) * kit.SD.freqMult, time);
@@ -46,7 +46,7 @@ export const createDrumEngine = (ctx: BaseAudioContext, dest: AudioNode, drumKit
 
   const playHC = (time: number, velocity: number, p = {tune: 0.5, decay: 0.5}) => {
     const noise = ctx.createBufferSource(); const decayTime = (0.02 + (p.decay * 0.1)) * kit.HC.decayMult;
-    const bufferSize = ctx.sampleRate * decayTime; const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+    const bufferSize = Math.max(1, Math.floor(ctx.sampleRate * decayTime)); const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
     const data = buffer.getChannelData(0); for (let i = 0; i < bufferSize; i++) data[i] = Math.random() * 2 - 1;
     noise.buffer = buffer;
     const filter = ctx.createBiquadFilter(); filter.type = 'highpass'; filter.frequency.setValueAtTime((5000 + (p.tune * 4000)) * kit.HC.freqMult, time);
@@ -56,7 +56,7 @@ export const createDrumEngine = (ctx: BaseAudioContext, dest: AudioNode, drumKit
 
   const playOH = (time: number, velocity: number, p = {tune: 0.5, decay: 0.5}) => {
     const noise = ctx.createBufferSource(); const decayTime = (0.1 + (p.decay * 0.4)) * kit.OH.decayMult;
-    const bufferSize = ctx.sampleRate * decayTime; const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+    const bufferSize = Math.max(1, Math.floor(ctx.sampleRate * decayTime)); const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
     const data = buffer.getChannelData(0); for (let i = 0; i < bufferSize; i++) data[i] = Math.random() * 2 - 1;
     noise.buffer = buffer;
     const filter = ctx.createBiquadFilter(); filter.type = 'highpass'; filter.frequency.setValueAtTime((5000 + (p.tune * 4000)) * kit.OH.freqMult, time);
@@ -66,7 +66,7 @@ export const createDrumEngine = (ctx: BaseAudioContext, dest: AudioNode, drumKit
 
   const playLT = (time: number, velocity: number, p = {tune: 0.5, decay: 0.5}) => {
     const noise = ctx.createBufferSource(); const decayTime = (0.3 + (p.decay * 0.8)) * kit.LT.decayMult;
-    const bufferSize = ctx.sampleRate * decayTime; const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+    const bufferSize = Math.max(1, Math.floor(ctx.sampleRate * decayTime)); const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
     const data = buffer.getChannelData(0); for (let i = 0; i < bufferSize; i++) data[i] = Math.random() * 2 - 1;
     noise.buffer = buffer;
     const filter = ctx.createBiquadFilter(); filter.type = 'highpass'; filter.frequency.setValueAtTime((4000 + (p.tune * 4000)) * kit.LT.freqMult, time);
