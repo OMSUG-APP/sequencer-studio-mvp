@@ -94,8 +94,9 @@ export function PatternEditor({
                 {/* 16-step grid */}
                 <div className="flex-1 grid grid-cols-16 gap-1">
                   {steps.map((step: any, i: number) => {
-                    const isActive  = step.active;
-                    const isCurrent = currentStep === i;
+                    const isActive   = step.active;
+                    const isCurrent  = currentStep === i;
+                    const isLightBeat = Math.floor(i / 4) % 2 === 0; // beats 1-4 and 9-12
                     return (
                       <button
                         key={i}
@@ -106,7 +107,9 @@ export function PatternEditor({
                             ? { background: '#FF5F00', borderColor: '#E05500', boxShadow: isCurrent ? '0 0 10px rgba(255,95,0,0.7)' : '0 0 6px rgba(255,95,0,0.3)' }
                             : isCurrent
                             ? { background: '#1e1e22', borderColor: '#FF5F00', outline: '1px solid #FF5F00' }
-                            : { background: '#151518', borderColor: '#242428' }
+                            : isLightBeat
+                            ? { background: '#222228', borderColor: '#2e2e36' }
+                            : { background: '#151518', borderColor: '#1e1e22' }
                         }
                       />
                     );
@@ -185,9 +188,10 @@ export function PatternEditor({
                 <div className="w-7 flex-shrink-0 text-[9px] font-bold text-[#8A8A94] text-right pr-1">{note}</div>
                 <div className="flex-1 grid grid-cols-16 gap-1">
                   {pattern.bass.map((step: any, i: number) => {
-                    const fullNote = `${note}${bp.octave || 2}`;
-                    const isActive  = step.active && step.note === fullNote;
-                    const isCurrent = currentStep === i;
+                    const fullNote    = `${note}${bp.octave || 2}`;
+                    const isActive    = step.active && step.note === fullNote;
+                    const isCurrent   = currentStep === i;
+                    const isLightBeat = Math.floor(i / 4) % 2 === 0;
                     return (
                       <button key={i} onClick={() => onToggleBassStep(i, fullNote)}
                         className="h-5 rounded-sm border transition-all duration-75"
@@ -196,7 +200,9 @@ export function PatternEditor({
                             ? { background: '#FF5F00', borderColor: '#E05500', boxShadow: '0 0 6px rgba(255,95,0,0.35)' }
                             : isCurrent
                             ? { background: '#1e1e22', borderColor: '#FF5F00' }
-                            : { background: '#151518', borderColor: '#242428' }
+                            : isLightBeat
+                            ? { background: '#222228', borderColor: '#2e2e36' }
+                            : { background: '#151518', borderColor: '#1e1e22' }
                         }
                       />
                     );
@@ -247,9 +253,10 @@ export function PatternEditor({
                 <div className="w-7 flex-shrink-0 text-[9px] font-bold text-[#8A8A94] text-right pr-1">{note}</div>
                 <div className="flex-1 grid grid-cols-16 gap-1">
                   {(pattern.synth || Array(16).fill({ active: false, note: '' })).map((step: any, i: number) => {
-                    const fullNote  = `${note}${sp.octave || 4}`;
-                    const isActive  = step.active && step.note === fullNote;
-                    const isCurrent = currentStep === i;
+                    const fullNote    = `${note}${sp.octave || 4}`;
+                    const isActive    = step.active && step.note === fullNote;
+                    const isCurrent   = currentStep === i;
+                    const isLightBeat = Math.floor(i / 4) % 2 === 0;
                     return (
                       <button key={i} onClick={() => onToggleSynthStep(i, fullNote)}
                         className="h-5 rounded-sm border transition-all duration-75"
@@ -258,7 +265,9 @@ export function PatternEditor({
                             ? { background: '#8b5cf6', borderColor: '#7c3aed', boxShadow: '0 0 6px rgba(139,92,246,0.4)' }
                             : isCurrent
                             ? { background: '#1e1e22', borderColor: '#8b5cf6' }
-                            : { background: '#151518', borderColor: '#242428' }
+                            : isLightBeat
+                            ? { background: '#222228', borderColor: '#2e2e36' }
+                            : { background: '#151518', borderColor: '#1e1e22' }
                         }
                       />
                     );
