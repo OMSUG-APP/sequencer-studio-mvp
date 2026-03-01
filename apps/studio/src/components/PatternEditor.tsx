@@ -1,5 +1,5 @@
 import React from 'react';
-import { Pattern, DrumInstrument } from '../types';
+import { Pattern, DrumInstrument, SamplerPad, PadLoadStatus } from '../types';
 import { BASS_PRESETS, SYNTH_PRESETS } from '../constants';
 
 interface PatternEditorProps {
@@ -20,6 +20,11 @@ interface PatternEditorProps {
   synthPreset?: string;
   onUpdateSynthParam: (param: string, value: any) => void;
   onApplySynthPreset?: (preset: typeof SYNTH_PRESETS[string], name: string) => void;
+  // Sampler rows
+  samplerPads?: SamplerPad[];
+  padLoadStatus?: PadLoadStatus[];
+  samplerSteps?: boolean[][];
+  onToggleSamplerStep?: (padId: number, step: number) => void;
 }
 
 const BASS_NOTES  = ['B', 'A#', 'A', 'G#', 'G', 'F#', 'F', 'E', 'D#', 'D', 'C#', 'C'];
@@ -33,6 +38,7 @@ export function PatternEditor({
   drumKit, onDrumKitChange, drumParams = {}, onUpdateDrumParam,
   bassParams, bassPreset, onUpdateBassParam, onApplyBassPreset,
   synthParams, synthPreset, onUpdateSynthParam, onApplySynthPreset,
+  samplerPads = [], padLoadStatus = [], samplerSteps = [], onToggleSamplerStep,
 }: PatternEditorProps) {
 
   const bp = bassParams  || { waveform: 'sawtooth', cutoff: 0.5, resonance: 0.2, envMod: 0.5, decay: 0.5 };
@@ -277,6 +283,68 @@ export function PatternEditor({
             ))}
           </div>
         </div>
+      </div>
+
+      {/* SAMPLER SECTION */}
+      <div className="mt-7 border-t border-[#242428] pt-5 pb-8">
+        <div className="text-xs font-bold text-[#FF5F00] tracking-widest uppercase mb-3">
+          Sample Pads
+        </div>
+
+        {samplerPads.filter(p => padLoadStatus[p.id] === 'loaded').length === 0 ? (
+          <p className="text-[9px] text-[#444] tracking-widest py-2">
+            No samples loaded — add samples in the Sampler tab
+          </p>
+        ) : (
+          <div className="overflow-x-auto">
+            <div className={`flex flex-col gap-2 ${GRID_MIN_W}`}>
+              {samplerPads
+                .filter(p => padLoadStatus[p.id] === 'loaded')
+                .map(pad => {
+                  const padSteps = samplerSteps[pad.id] || Array(16).fill(false);
+                  return (
+                    <div key={pad.id} className="flex items-center gap-2">
+                      {/* Color dot + label */}
+                      <div className="w-7 flex-shrink-0 flex items-center gap-1">
+                        <div className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: pad.color }} />
+                        <span
+                          className="text-[9px] font-bold truncate"
+                          style={{ color: pad.color }}
+                          title={pad.label}
+                        >
+                          {pad.label.slice(0, 4)}
+                        </span>
+                      </div>
+
+                      {/* 16-step grid */}
+                      <div className="flex-1 grid grid-cols-16 gap-1">
+                        {padSteps.map((active: boolean, i: number) => {
+                          const isCurrent   = currentStep === i;
+                          const isLightBeat = Math.floor(i / 4) % 2 === 0;
+                          return (
+                            <button
+                              key={i}
+                              onClick={() => onToggleSamplerStep?.(pad.id, i)}
+                              className="h-9 rounded-sm border transition-all duration-75"
+                              style={
+                                active
+                                  ? { background: pad.color, borderColor: pad.color, boxShadow: isCurrent ? `0 0 10px ${pad.color}AA` : `0 0 5px ${pad.color}55` }
+                                  : isCurrent
+                                  ? { background: '#1e1e22', borderColor: pad.color, outline: `1px solid ${pad.color}` }
+                                  : isLightBeat
+                                  ? { background: '#222228', borderColor: '#2e2e36' }
+                                  : { background: '#151518', borderColor: '#1e1e22' }
+                              }
+                            />
+                          );
+                        })}
+                      </div>
+                    </div>
+                  );
+                })}
+            </div>
+          </div>
+        )}
       </div>
 
     </div>

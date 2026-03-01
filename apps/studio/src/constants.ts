@@ -45,7 +45,8 @@ export const INITIAL_PATTERN = (id: string, name: string): Pattern => ({
     HT: Array(16).fill({ active: false, velocity: 0.8 }),
   },
   bass: Array(16).fill({ active: false, note: '', velocity: 0.8, length: 1 }),
-  synth: Array(16).fill({ active: false, note: '', velocity: 0.6, length: 4 }), // Default to longer notes
+  synth: Array(16).fill({ active: false, note: '', velocity: 0.6, length: 4 }),
+  samplerSteps: Array.from({ length: 16 }, () => Array(16).fill(false)),
 });
 
 export const INITIAL_PROJECT: Project = {

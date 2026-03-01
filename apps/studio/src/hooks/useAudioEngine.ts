@@ -19,7 +19,10 @@ function createReverbIR(ctx: AudioContext, duration: number, decay: number) {
   return impulse;
 }
 
-export const useAudioEngine = (project: Project) => {
+export const useAudioEngine = (
+  project: Project,
+  onScheduleSamplerPad?: (padId: number, seqTime: number, seqNow: number) => void,
+) => {
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentStep, setCurrentStep] = useState(0);
   const audioCtxRef = useRef<AudioContext | null>(null);
@@ -29,6 +32,9 @@ export const useAudioEngine = (project: Project) => {
   
   const projectRef = useRef(project);
   useEffect(() => { projectRef.current = project; }, [project]);
+
+  const samplerCallbackRef = useRef(onScheduleSamplerPad);
+  useEffect(() => { samplerCallbackRef.current = onScheduleSamplerPad; }, [onScheduleSamplerPad]);
   
   const drumGainRef = useRef<GainNode | null>(null);
   const bassGainRef = useRef<GainNode | null>(null);
@@ -133,13 +139,38 @@ export const useAudioEngine = (project: Project) => {
       const freq = noteToFreq(synthStep.note, synthOctaveShift);
       synthEngine.playNote(adjustedTime, freq, secondsPerStep * (synthStep.length || 4), synthStep.velocity || 0.6, sp);
     }
+
+    // SAMPLER SCHEDULING
+    const callback = samplerCallbackRef.current;
+    if (callback) {
+      const samplerSteps = pattern.samplerSteps || [];
+      const seqNow = audioCtxRef.current.currentTime;
+      samplerSteps.forEach((padSteps, padId) => {
+        if (padSteps[step]) callback(padId, adjustedTime, seqNow);
+      });
+    }
   }, []);
 
   const scheduler = useCallback(() => {
-    if (!audioCtxRef.current) return;
+    const ctx = audioCtxRef.current;
+    if (!ctx) {
+      console.warn('[scheduler] stopped — audioCtx is null');
+      return;
+    }
+
+    // Auto-resume if the browser suspended the context (e.g. tab focus loss)
+    if (ctx.state === 'suspended') {
+      ctx.resume().catch(e => console.warn('[scheduler] resume failed:', e));
+    }
+
+    if (ctx.state === 'closed') {
+      console.warn('[scheduler] stopped — audioCtx is closed');
+      return;
+    }
+
     try {
-      while (nextNoteTimeRef.current < audioCtxRef.current.currentTime + 0.1) {
-        setCurrentStep(stepRef.current); // show the step being played, not the next one
+      while (nextNoteTimeRef.current < ctx.currentTime + 0.1) {
+        setCurrentStep(stepRef.current);
         scheduleNote(stepRef.current, nextNoteTimeRef.current);
         const bpm = projectRef.current?.bpm || 120;
         const secondsPerStep = 60 / bpm / 4;
@@ -147,8 +178,9 @@ export const useAudioEngine = (project: Project) => {
         stepRef.current = (stepRef.current + 1) % 16;
       }
     } catch (e) {
-      console.error('[scheduler] note scheduling error:', e);
+      console.error('[scheduler] error at step', stepRef.current, e);
     }
+
     timerIDRef.current = window.setTimeout(scheduler, 25);
   }, [scheduleNote]);
 

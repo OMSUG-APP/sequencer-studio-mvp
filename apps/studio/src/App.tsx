@@ -2,11 +2,15 @@ import { useState, useEffect, useCallback } from 'react';
 import { TransportBar } from './components/TransportBar';
 import { PatternEditor } from './components/PatternEditor';
 import { MixerView } from './components/MixerView';
+import { SamplerView } from './components/sampler';
 import { useAudioEngine } from './hooks/useAudioEngine';
+import { useSampler } from './hooks/useSampler';
 import { INITIAL_PROJECT, INITIAL_PATTERN, BASS_PRESETS, SYNTH_PRESETS } from './constants';
 import { Project, DrumInstrument } from './types';
 import { Download } from 'lucide-react';
 import { renderToWav } from './utils/export';
+
+type MainTab = 'sequencer' | 'sampler';
 
 export default function App() {
   const [project, setProject] = useState<Project>(() => {
@@ -15,8 +19,10 @@ export default function App() {
   });
   const [activePatternId, setActivePatternId] = useState(project.patterns[0].id);
   const [isExporting, setIsExporting] = useState(false);
+  const [activeTab, setActiveTab] = useState<MainTab>('sequencer');
 
-  const { isPlaying, currentStep, togglePlay } = useAudioEngine(project);
+  const sampler = useSampler();
+  const { isPlaying, currentStep, togglePlay } = useAudioEngine(project, sampler.schedulePadAtTime);
 
   // Persistence
   useEffect(() => {
@@ -129,6 +135,16 @@ export default function App() {
         [param]: value
       }
     }));
+  };
+
+  const handleToggleSamplerStep = (padId: number, step: number) => {
+    updateActivePattern(p => {
+      const current = p.samplerSteps || Array.from({ length: 16 }, () => Array(16).fill(false));
+      const next = current.map((row, i) =>
+        i === padId ? row.map((v: boolean, j: number) => j === step ? !v : v) : row
+      );
+      return { ...p, samplerSteps: next };
+    });
   };
 
   const handleApplySynthPreset = (preset: typeof SYNTH_PRESETS[string], name: string) => {
@@ -245,31 +261,59 @@ export default function App() {
         onSwingChange={(swing) => setProject({ ...project, swing })}
       />
 
+      {/* ── Tab bar ──────────────────────────────────────────────────────── */}
+      <div className="flex items-center gap-1 px-4 pt-3 pb-0 border-b border-[#242428]">
+        {(['sequencer', 'sampler'] as MainTab[]).map(tab => (
+          <button
+            key={tab}
+            onClick={() => setActiveTab(tab)}
+            className="px-4 py-1.5 text-[9px] font-bold uppercase tracking-widest rounded-t transition-colors"
+            style={activeTab === tab
+              ? { background: '#111113', color: '#FF5F00', borderBottom: '2px solid #FF5F00' }
+              : { background: 'transparent', color: '#555', borderBottom: '2px solid transparent' }
+            }
+          >
+            {tab}
+          </button>
+        ))}
+      </div>
+
       <div className="flex flex-1 overflow-hidden p-4 gap-4">
         <div className="flex-4 flex flex-col overflow-hidden">
 
-          {/* Pattern Editor */}
-          <div className="flex-1 bg-[#111113] border border-[#242428] rounded-lg p-4 shadow-lg overflow-y-auto">
-            <PatternEditor
-              pattern={activePattern}
-              currentStep={currentStep}
-              onToggleDrumStep={handleToggleDrumStep}
-              onToggleBassStep={handleToggleBassStep}
-              onToggleSynthStep={handleToggleSynthStep}
-              drumKit={project.drumKit}
-              onDrumKitChange={handleDrumKitChange}
-              drumParams={project.drumParams}
-              onUpdateDrumParam={handleUpdateDrumParam}
-              bassParams={project.bassParams}
-              bassPreset={project.bassPreset}
-              onUpdateBassParam={handleUpdateBassParam}
-              onApplyBassPreset={handleApplyBassPreset}
-              synthParams={project.synthParams}
-              synthPreset={project.synthPreset}
-              onUpdateSynthParam={handleUpdateSynthParam}
-              onApplySynthPreset={handleApplySynthPreset}
-            />
-          </div>
+          {activeTab === 'sequencer' ? (
+            /* ── Pattern Editor ─────────────────────────────────────────── */
+            <div className="flex-1 bg-[#111113] border border-[#242428] rounded-lg p-4 shadow-lg overflow-y-auto">
+              <PatternEditor
+                pattern={activePattern}
+                currentStep={currentStep}
+                onToggleDrumStep={handleToggleDrumStep}
+                onToggleBassStep={handleToggleBassStep}
+                onToggleSynthStep={handleToggleSynthStep}
+                drumKit={project.drumKit}
+                onDrumKitChange={handleDrumKitChange}
+                drumParams={project.drumParams}
+                onUpdateDrumParam={handleUpdateDrumParam}
+                bassParams={project.bassParams}
+                bassPreset={project.bassPreset}
+                onUpdateBassParam={handleUpdateBassParam}
+                onApplyBassPreset={handleApplyBassPreset}
+                synthParams={project.synthParams}
+                synthPreset={project.synthPreset}
+                onUpdateSynthParam={handleUpdateSynthParam}
+                onApplySynthPreset={handleApplySynthPreset}
+                samplerPads={sampler.pads}
+                padLoadStatus={sampler.padLoadStatus}
+                samplerSteps={activePattern.samplerSteps}
+                onToggleSamplerStep={handleToggleSamplerStep}
+              />
+            </div>
+          ) : (
+            /* ── Sampler ────────────────────────────────────────────────── */
+            <div className="flex-1 overflow-hidden">
+              <SamplerView {...sampler} />
+            </div>
+          )}
 
         </div>
 
