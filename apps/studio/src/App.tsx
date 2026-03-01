@@ -311,7 +311,14 @@ export default function App() {
           ) : (
             /* ── Sampler ────────────────────────────────────────────────── */
             <div className="flex-1 overflow-hidden">
-              <SamplerView {...sampler} />
+              <SamplerView
+                {...sampler}
+                mixerChannel={project.mixer.sampler}
+                onMixerChannelChange={(ch) => setProject(prev => ({
+                  ...prev,
+                  mixer: { ...prev.mixer, sampler: ch }
+                }))}
+              />
             </div>
           )}
 
