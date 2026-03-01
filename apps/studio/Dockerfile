@@ -5,6 +5,8 @@ WORKDIR /app
 
 # Copy root workspace files
 COPY package.json package-lock.json ./
+# Copy workspace packages so npm can resolve monorepo symlinks
+COPY packages/ ./packages/
 COPY apps/studio/package.json ./apps/studio/
 
 # Install dependencies (using workspaces)
@@ -25,6 +27,6 @@ COPY apps/studio/nginx.conf /etc/nginx/conf.d/default.conf
 # Copy build artifacts from build stage
 COPY --from=build /app/apps/studio/dist /usr/share/nginx/html
 
-EXPOSE 80
+EXPOSE 8080
 
 CMD ["nginx", "-g", "daemon off;"]
