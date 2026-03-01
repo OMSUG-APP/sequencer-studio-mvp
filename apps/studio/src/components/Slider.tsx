@@ -8,7 +8,7 @@ interface SliderProps {
   value: number;
   onChange: (value: number) => void;
   color?: string;
-  /** CSS color for the label text. Default: '#a1a1aa' */
+  /** CSS color for the label text. Default: '#8A8A94' */
   labelColor?: string;
   /** 'horizontal' (default) or 'vertical' for channel faders */
   orientation?: 'horizontal' | 'vertical';
@@ -27,8 +27,8 @@ export function Slider({
   step,
   value,
   onChange,
-  color = '#a1a1aa',
-  labelColor = '#a1a1aa',
+  color = '#FF5F00',
+  labelColor = '#8A8A94',
   orientation = 'horizontal',
   labelWidth = 'w-12',
   faderHeight = 'h-48',
@@ -49,12 +49,12 @@ export function Slider({
             step={step}
             value={value}
             onChange={handleChange}
-            className="w-1 h-full bg-[#1a1a1a] rounded-lg cursor-pointer flex-shrink-0"
+            className="w-1 h-full bg-[#1a1a1e] rounded-lg cursor-pointer flex-shrink-0"
             style={{ writingMode: 'vertical-lr', direction: 'rtl', accentColor: color }}
           />
         </div>
         {label && (
-          <span className="text-[9px] mt-2 uppercase" style={{ color: labelColor }}>
+          <span className="text-[9px] mt-2 uppercase tracking-widest" style={{ color: labelColor }}>
             {label}
           </span>
         )}
@@ -66,7 +66,7 @@ export function Slider({
     <div className={`flex items-center gap-2 ${className}`}>
       {label && (
         <span
-          className={`text-[9px] uppercase font-bold ${labelWidth}`}
+          className={`text-[9px] uppercase font-bold tracking-widest ${labelWidth}`}
           style={{ color: labelColor }}
         >
           {label}
@@ -79,7 +79,7 @@ export function Slider({
         step={step}
         value={value}
         onChange={handleChange}
-        className="flex-1 h-1 bg-[#1a1a1a] rounded-lg cursor-pointer"
+        className="flex-1 h-1 bg-[#1a1a1e] rounded-lg cursor-pointer"
         style={{ accentColor: color }}
       />
     </div>

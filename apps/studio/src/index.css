@@ -1,14 +1,16 @@
 @import "tailwindcss";
 
 @theme {
-  --color-synth-bg: #0a0a0a;
-  --color-synth-panel: #121212;
-  --color-synth-border: #27272a;
-  --color-synth-accent: #f97316; /* Orange */
-  --color-synth-accent-hover: #ea580c;
-  --color-synth-text: #a1a1aa;
-  --color-synth-text-bright: #f4f4f5;
-  --color-synth-active: #10b981; /* Emerald Green for active steps */
+  --color-synth-bg: #0A0A0B;
+  --color-synth-panel: #111113;
+  --color-synth-border: #242428;
+  --color-synth-accent: #FF5F00;
+  --color-synth-accent-hover: #E05500;
+  --color-synth-text: #8A8A94;
+  --color-synth-text-bright: #F0F0F2;
+  --color-synth-active: #FF5F00;
+  --glow-accent: 0 0 12px rgba(255, 95, 0, 0.45);
+  --glow-accent-strong: 0 0 20px rgba(255, 95, 0, 0.65);
 }
 
 body {
@@ -33,5 +35,13 @@ body {
   border-radius: 4px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #3f3f46;
+  background: #3a3a40;
+}
+
+/* Orange glow utility classes */
+.glow-accent {
+  box-shadow: var(--glow-accent);
+}
+.glow-accent-strong {
+  box-shadow: var(--glow-accent-strong);
 }

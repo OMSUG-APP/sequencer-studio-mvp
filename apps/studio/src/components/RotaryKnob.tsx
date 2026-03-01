@@ -18,7 +18,7 @@ export function RotaryKnob({
   step,
   value,
   onChange,
-  color = '#a1a1aa',
+  color = '#FF5F00',
   className = '',
 }: RotaryKnobProps) {
   const svgRef = useRef<SVGSVGElement>(null);
@@ -27,42 +27,29 @@ export function RotaryKnob({
   const [dragAccumulator, setDragAccumulator] = useState(0);
 
   // Multi-turn: 3 full rotations (1080°) for the full range
-  const TOTAL_ROTATION = 1080; // degrees for full range
+  const TOTAL_ROTATION = 1080;
   const RANGE = max - min;
 
-  // Calculate rotation angle from value (0-360 per rotation, multi-turn)
   const valuePercent = (value - min) / RANGE;
   const rotationAngle = valuePercent * TOTAL_ROTATION;
 
-  // Handle mouse down
   const handleMouseDown = (e: React.MouseEvent<SVGSVGElement>) => {
     setIsDragging(true);
     setStartY(e.clientY);
   };
 
-  // Handle mouse move
   useEffect(() => {
     if (!isDragging) return;
 
     const handleMouseMove = (e: MouseEvent) => {
-      const deltaY = startY - e.clientY; // negative = move down, positive = move up
+      const deltaY = startY - e.clientY;
       const newAccumulator = dragAccumulator + deltaY;
-
-      // Convert accumulated drag to rotation
-      // Sensitivity factor: pixels of drag per degree of rotation
-      const sensitivity = 1.5; // 1.5 pixels = 1 degree
+      const sensitivity = 1.5;
       const rotationDelta = newAccumulator / sensitivity;
-
-      // Convert rotation back to value
       const valueChange = (rotationDelta / TOTAL_ROTATION) * RANGE;
       let newValue = value + valueChange;
-
-      // Clamp to range
       newValue = Math.max(min, Math.min(max, newValue));
-
-      // Round to step
       newValue = Math.round(newValue / step) * step;
-
       onChange(newValue);
       setDragAccumulator(0);
       setStartY(e.clientY);
@@ -73,45 +60,33 @@ export function RotaryKnob({
       setDragAccumulator(0);
     };
 
-    if (isDragging) {
-      window.addEventListener('mousemove', handleMouseMove);
-      window.addEventListener('mouseup', handleMouseUp);
-
-      return () => {
-        window.removeEventListener('mousemove', handleMouseMove);
-        window.removeEventListener('mouseup', handleMouseUp);
-      };
-    }
+    window.addEventListener('mousemove', handleMouseMove);
+    window.addEventListener('mouseup', handleMouseUp);
+    return () => {
+      window.removeEventListener('mousemove', handleMouseMove);
+      window.removeEventListener('mouseup', handleMouseUp);
+    };
   }, [isDragging, startY, dragAccumulator, value, min, max, step, TOTAL_ROTATION, RANGE, onChange]);
 
-  // SVG size
   const size = 48;
   const centerX = size / 2;
   const centerY = size / 2;
   const radius = 18;
   const trackWidth = 2;
 
-  // Calculate arc path from 0° to current rotation
-  const startAngle = -90; // Start at top
-
-  // Normalize the visual angle for arc rendering (0-360°)
+  const startAngle = -90;
   const normalizedRotation = rotationAngle % 360;
   const visualAngle = startAngle + normalizedRotation;
-
-  // Convert normalized angle to radians and get arc endpoint
   const angleRad = (visualAngle * Math.PI) / 180;
   const endX = centerX + radius * Math.cos(angleRad);
   const endY = centerY + radius * Math.sin(angleRad);
-
-  // Large arc flag (1 if visual span > 180, else 0)
-  // The arc spans from startAngle to visualAngle
   const largeArc = normalizedRotation > 180 ? 1 : 0;
-
-  // Create SVG arc path
   const arcPath = `M ${centerX} ${centerY - radius} A ${radius} ${radius} 0 ${largeArc} 1 ${endX} ${endY}`;
 
+  const isAccent = color === '#FF5F00';
+
   return (
-    <div className={`flex flex-col items-center gap-2 ${className}`}>
+    <div className={`flex flex-col items-center gap-1 ${className}`}>
       <svg
         ref={svgRef}
         width={size}
@@ -119,7 +94,15 @@ export function RotaryKnob({
         viewBox={`0 0 ${size} ${size}`}
         className="cursor-grab active:cursor-grabbing"
         onMouseDown={handleMouseDown}
-        style={{ userSelect: 'none' }}
+        style={{
+          userSelect: 'none',
+          filter: isDragging && isAccent
+            ? 'drop-shadow(0 0 6px rgba(255, 95, 0, 0.7))'
+            : isAccent
+            ? 'drop-shadow(0 0 3px rgba(255, 95, 0, 0.4))'
+            : 'none',
+          transition: 'filter 0.15s ease',
+        }}
       >
         {/* Background circle */}
         <circle
@@ -127,7 +110,7 @@ export function RotaryKnob({
           cy={centerY}
           r={radius}
           fill="none"
-          stroke="#27272a"
+          stroke="#242428"
           strokeWidth={trackWidth}
         />
 
@@ -143,7 +126,7 @@ export function RotaryKnob({
         {/* Center dot */}
         <circle cx={centerX} cy={centerY} r={2} fill={color} />
 
-        {/* Knob indicator (small line pointing to current value) */}
+        {/* Knob indicator */}
         <line
           x1={centerX}
           y1={centerY - radius + 2}
@@ -160,12 +143,11 @@ export function RotaryKnob({
         />
       </svg>
 
-      {/* Label */}
-      <span className="text-[9px] font-bold uppercase text-[#a1a1aa]">{label}</span>
-
-      {/* Value display */}
-      <span className="text-[10px] font-mono text-[#a1a1aa]">
-        {value.toFixed(1)}
+      <span className="text-[9px] font-bold uppercase tracking-widest" style={{ color: '#8A8A94' }}>
+        {label}
+      </span>
+      <span className="text-[10px] font-mono" style={{ color }}>
+        {value.toFixed(2)}
       </span>
     </div>
   );

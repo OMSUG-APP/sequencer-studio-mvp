@@ -194,24 +194,32 @@ export default function App() {
   };
 
   return (
-    <div className="flex flex-col h-screen bg-[#0a0a0a] text-[#a1a1aa] overflow-hidden font-mono">
+    <div className="flex flex-col h-screen bg-[#0A0A0B] text-[#8A8A94] overflow-hidden font-mono">
       {/* Header */}
-      <div className="flex items-center justify-between px-6 py-3 bg-[#121212] border-b border-[#27272a] shadow-md">
+      <div className="flex items-center justify-between px-6 py-3 bg-[#111113] border-b border-[#242428] shadow-md">
         <div className="flex items-center gap-3">
-          <div className="w-8 h-8 bg-[#f97316] rounded-sm flex items-center justify-center shadow-[0_0_10px_rgba(249,115,22,0.3)]">
+          <div
+            className="w-8 h-8 bg-[#FF5F00] rounded-sm flex items-center justify-center"
+            style={{ boxShadow: '0 0 12px rgba(255, 95, 0, 0.5)' }}
+          >
             <div className="w-4 h-4 bg-black rounded-sm rotate-45" />
           </div>
-          <input
-            value={project.name}
-            onChange={(e) => setProject({ ...project, name: e.target.value })}
-            className="bg-transparent font-bold text-sm text-[#f4f4f5] focus:outline-none hover:bg-[#27272a] px-2 py-1 rounded transition-colors uppercase tracking-wider"
-          />
+          <div className="flex flex-col">
+            <span className="text-[10px] uppercase tracking-[0.2em] text-[#FF5F00] font-bold leading-none">
+              AudioCoach.ai
+            </span>
+            <input
+              value={project.name}
+              onChange={(e) => setProject({ ...project, name: e.target.value })}
+              className="bg-transparent font-bold text-sm text-[#F0F0F2] focus:outline-none hover:bg-[#242428] px-1 py-0.5 rounded transition-colors uppercase tracking-wider leading-tight"
+            />
+          </div>
         </div>
         <div className="flex items-center gap-3">
           <button
             onClick={handleExportStems}
             disabled={isExporting}
-            className="flex items-center gap-2 px-4 py-2 bg-[#1a1a1a] border border-[#3f3f46] hover:bg-[#27272a] hover:text-[#f4f4f5] rounded text-xs font-bold transition-colors uppercase tracking-widest disabled:opacity-50"
+            className="flex items-center gap-2 px-4 py-2 bg-[#111113] border border-[#242428] hover:border-[#FF5F00] hover:text-[#F0F0F2] rounded text-xs font-bold transition-colors uppercase tracking-widest disabled:opacity-50"
           >
             <Download size={14} />
             {isExporting ? 'Rendering...' : 'Export Stems'}
@@ -219,7 +227,8 @@ export default function App() {
           <button
             onClick={handleExportMaster}
             disabled={isExporting}
-            className="flex items-center gap-2 px-4 py-2 bg-[#f97316] text-black hover:bg-[#ea580c] rounded text-xs font-bold transition-colors uppercase tracking-widest disabled:opacity-50"
+            className="flex items-center gap-2 px-4 py-2 bg-[#FF5F00] text-black hover:bg-[#E05500] rounded text-xs font-bold transition-colors uppercase tracking-widest disabled:opacity-50"
+            style={{ boxShadow: '0 0 10px rgba(255, 95, 0, 0.3)' }}
           >
             <Download size={14} />
             {isExporting ? 'Rendering...' : 'Export Master'}
@@ -240,7 +249,7 @@ export default function App() {
         <div className="flex-4 flex flex-col overflow-hidden">
 
           {/* Pattern Editor */}
-          <div className="flex-1 bg-[#121212] border border-[#27272a] rounded-lg p-4 shadow-lg overflow-y-auto">
+          <div className="flex-1 bg-[#111113] border border-[#242428] rounded-lg p-4 shadow-lg overflow-y-auto">
             <PatternEditor
               pattern={activePattern}
               currentStep={currentStep}
@@ -265,7 +274,7 @@ export default function App() {
         </div>
 
         {/* Mixer */}
-        <div className="flex-1 bg-[#121212] border border-[#27272a] rounded-lg p-4 shadow-lg overflow-y-auto">
+        <div className="flex-1 bg-[#111113] border border-[#242428] rounded-lg p-4 shadow-lg overflow-y-auto">
           <MixerView
             mixer={project.mixer}
             onMixerChange={(mixer) => setProject({ ...project, mixer })}

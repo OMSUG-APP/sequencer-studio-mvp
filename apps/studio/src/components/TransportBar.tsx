@@ -1,10 +1,5 @@
-/**
- * @license
- * SPDX-License-Identifier: Apache-2.0
- */
-
 import React from 'react';
-import { Play, Square, Sliders, Music } from 'lucide-react';
+import { Play, Square } from 'lucide-react';
 
 interface TransportBarProps {
   isPlaying: boolean;
@@ -24,34 +19,44 @@ export const TransportBar: React.FC<TransportBarProps> = ({
   onSwingChange,
 }) => {
   return (
-    <div className="flex items-center justify-between p-4 bg-zinc-900 border-b border-zinc-800 text-zinc-100">
+    <div className="flex items-center justify-between px-6 py-3 bg-[#111113] border-b border-[#242428] text-[#F0F0F2]">
       <div className="flex items-center gap-4">
         <button
           onClick={onTogglePlay}
-          className={`p-3 rounded-full transition-all ${
-            isPlaying ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-500/20' : 'bg-zinc-800 text-zinc-400 hover:text-white'
-          }`}
+          className="p-3 rounded-full transition-all"
+          style={
+            isPlaying
+              ? {
+                  background: '#FF5F00',
+                  color: '#000',
+                  boxShadow: '0 0 16px rgba(255, 95, 0, 0.5)',
+                }
+              : {
+                  background: '#1a1a1e',
+                  color: '#8A8A94',
+                }
+          }
         >
-          {isPlaying ? <Square size={24} fill="currentColor" /> : <Play size={24} fill="currentColor" />}
+          {isPlaying ? <Square size={20} fill="currentColor" /> : <Play size={20} fill="currentColor" />}
         </button>
-        
+
         <div className="flex flex-col">
-          <span className="text-[10px] uppercase tracking-wider text-zinc-500 font-bold">Tempo</span>
+          <span className="text-[9px] uppercase tracking-[0.2em] text-[#8A8A94] font-bold">Tempo</span>
           <div className="flex items-center gap-2">
             <input
               type="number"
               value={bpm}
               onChange={(e) => onBpmChange(Number(e.target.value))}
-              className="bg-transparent text-xl font-mono w-16 focus:outline-none"
+              className="bg-transparent text-xl font-mono w-16 focus:outline-none text-[#F0F0F2]"
             />
-            <span className="text-xs text-zinc-600">BPM</span>
+            <span className="text-[9px] uppercase tracking-widest text-[#8A8A94]">BPM</span>
           </div>
         </div>
       </div>
 
       <div className="flex items-center gap-8">
         <div className="flex flex-col items-end">
-          <span className="text-[10px] uppercase tracking-wider text-zinc-500 font-bold">Swing</span>
+          <span className="text-[9px] uppercase tracking-[0.2em] text-[#8A8A94] font-bold">Swing</span>
           <div className="flex items-center gap-3">
             <input
               type="range"
@@ -59,9 +64,10 @@ export const TransportBar: React.FC<TransportBarProps> = ({
               max="100"
               value={swing}
               onChange={(e) => onSwingChange(Number(e.target.value))}
-              className="w-24 accent-emerald-500"
+              className="w-24"
+              style={{ accentColor: '#FF5F00' }}
             />
-            <span className="text-xs font-mono w-8 text-right">{swing}%</span>
+            <span className="text-xs font-mono w-8 text-right text-[#F0F0F2]">{swing}%</span>
           </div>
         </div>
       </div>
